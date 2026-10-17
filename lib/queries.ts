@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Machine,
+  SalesNumber,
+  SalesSyncStatus,
+  SellerReminder,
   MachineMedia,
   Manual,
   Profile,
@@ -70,4 +73,40 @@ export async function listManuals(opts?: { onlyActive?: boolean }) {
   if (opts?.onlyActive) q = q.eq("active", true);
   const { data } = await q.order("category").order("title");
   return (data ?? []) as Manual[];
+}
+
+export async function listActiveReminders(sellerId: string) {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("seller_reminders")
+    .select("*")
+    .eq("seller_id", sellerId)
+    .eq("active", true)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as SellerReminder[];
+}
+
+export async function listRemindersForSeller(sellerId: string) {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("seller_reminders")
+    .select("*")
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as SellerReminder[];
+}
+
+/** RLS decide o escopo: admin recebe tudo; vendedor só as próprias linhas. */
+export async function listSalesNumbers(opts?: { sellerId?: string }) {
+  const supabase = createClient();
+  let q = supabase.from("sales_numbers").select("*");
+  if (opts?.sellerId) q = q.eq("seller_id", opts.sellerId);
+  const { data } = await q.order("period", { ascending: false });
+  return (data ?? []) as SalesNumber[];
+}
+
+export async function getSalesStatus() {
+  const supabase = createClient();
+  const { data } = await supabase.from("sales_sync_status").select("*").eq("id", 1).maybeSingle();
+  return (data ?? null) as SalesSyncStatus | null;
 }

@@ -8,13 +8,14 @@ import { SLABadge } from "@/components/SLABadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge, statusLabels } from "@/components/StatusBadge";
 import { listTasks, listVendedores } from "@/lib/queries";
-import { getSLA, sortTasks } from "@/lib/sla";
+import { getSLA, isOwnTask, sortTasks } from "@/lib/sla";
+import { OriginBadge } from "@/components/OriginBadge";
 import { fmtDateTime } from "@/lib/dates";
 
 export default async function AdminTarefasPage({
   searchParams,
 }: {
-  searchParams: { vendedor?: string; status?: string; sla?: string };
+  searchParams: { vendedor?: string; status?: string; sla?: string; origem?: string };
 }) {
   const [tasks, vendedores] = await Promise.all([
     listTasks({ assignedTo: searchParams.vendedor, status: searchParams.status }),
@@ -22,6 +23,8 @@ export default async function AdminTarefasPage({
   ]);
 
   const filtered = sortTasks(tasks).filter((t) => {
+    if (searchParams.origem === "gestor" && isOwnTask(t)) return false;
+    if (searchParams.origem === "vendedor" && !isOwnTask(t)) return false;
     if (!searchParams.sla) return true;
     return getSLA(t.due_date, t.status).key === searchParams.sla;
   });
@@ -38,7 +41,7 @@ export default async function AdminTarefasPage({
         }
       />
 
-      <form className="mb-6 grid gap-3 sm:grid-cols-4">
+      <form className="mb-6 grid gap-3 sm:grid-cols-5">
         <Select name="vendedor" defaultValue={searchParams.vendedor ?? ""}>
           <option value="">Todos os vendedores</option>
           {vendedores.map((v) => (
@@ -60,6 +63,11 @@ export default async function AdminTarefasPage({
           <option value="vencida">Vencidas</option>
           <option value="atencao">Vencendo hoje (≤ 24h)</option>
           <option value="no_prazo">No prazo</option>
+        </Select>
+        <Select name="origem" defaultValue={searchParams.origem ?? ""}>
+          <option value="">Todas as origens</option>
+          <option value="gestor">Atribuídas pelo gestor</option>
+          <option value="vendedor">Criadas pelo vendedor</option>
         </Select>
         <div className="flex gap-2">
           <Button type="submit" variant="outline" className="flex-1">
@@ -93,6 +101,11 @@ export default async function AdminTarefasPage({
                     <Link href={`/admin/tarefas/${t.id}`} className="font-semibold hover:text-brand">
                       {t.title}
                     </Link>
+                    {isOwnTask(t) && (
+                      <span className="ml-2 align-middle">
+                        <OriginBadge label="Criada pelo vendedor" />
+                      </span>
+                    )}
                     <p className="text-xs text-muted">
                       {t.category ? `${t.category} · ` : ""}
                       {fmtDateTime(t.due_date)}

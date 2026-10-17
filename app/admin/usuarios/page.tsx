@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SheetNameField } from "@/components/SheetNameField";
 import { UserForm } from "@/components/UserForm";
 import { UserActiveToggle } from "@/components/UserActiveToggle";
 import { requireProfile } from "@/lib/auth";
@@ -23,12 +25,16 @@ export default async function UsuariosPage() {
       </Card>
 
       <Card className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
               <th className="px-4 py-3 font-semibold">Nome</th>
               <th className="px-4 py-3 font-semibold">Email</th>
               <th className="px-4 py-3 font-semibold">Perfil</th>
+              <th className="px-4 py-3 font-semibold">
+                Nome na planilha
+                <span className="block text-[10px] font-normal normal-case">exatamente como na coluna Vendedor</span>
+              </th>
               <th className="px-4 py-3 font-semibold">Desde</th>
               <th className="px-4 py-3 text-right font-semibold">Ações</th>
             </tr>
@@ -42,9 +48,23 @@ export default async function UsuariosPage() {
                 </td>
                 <td className="px-4 py-3 text-muted">{u.email}</td>
                 <td className="px-4 py-3 capitalize">{u.role}</td>
+                <td className="px-4 py-3">
+                  {u.role === "vendedor" ? (
+                    <SheetNameField id={u.id} value={u.sheet_name} />
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-muted">{fmtDate(u.created_at)}</td>
                 <td className="px-4 py-3 text-right">
-                  <UserActiveToggle id={u.id} active={u.active} disabled={u.id === me.id} />
+                  <div className="flex justify-end gap-2">
+                    {u.role === "vendedor" && (
+                      <ButtonLink href={`/admin/usuarios/${u.id}/lembretes`} variant="outline" size="sm">
+                        Lembretes
+                      </ButtonLink>
+                    )}
+                    <UserActiveToggle id={u.id} active={u.active} disabled={u.id === me.id} />
+                  </div>
                 </td>
               </tr>
             ))}

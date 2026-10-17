@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { relinkSales } from "@/lib/sales/sync";
 import { userSchema, type UserInput } from "@/lib/schemas";
 
 type Result = { error?: string };
@@ -39,5 +41,18 @@ export async function setUserActive(id: string, active: boolean): Promise<Result
   const { error } = await admin.from("profiles").update({ active }).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/usuarios");
+  return {};
+}
+
+export async function setSheetName(id: string, sheetName: string): Promise<Result> {
+  await requireProfile("admin");
+  const value = sheetName.trim() || null;
+  // client do usuário: o RLS (admin) e o trigger profiles_guard validam a permissão
+  const { error } = await createClient().from("profiles").update({ sheet_name: value }).eq("id", id);
+  if (error) return { error: error.message };
+  await relinkSales(); // reaplica o vínculo nas linhas já sincronizadas
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/vendas");
+  revalidatePath("/vendedor/dashboard");
   return {};
 }

@@ -11,6 +11,14 @@ export const taskSchema = z.object({
 });
 export type TaskInput = z.infer<typeof taskSchema>;
 
+/** Tarefa criada pelo próprio vendedor: sem campo de vendedor (sempre ele mesmo). */
+export const ownTaskSchema = taskSchema.omit({ assigned_to: true });
+export type OwnTaskInput = z.infer<typeof ownTaskSchema>;
+
+export const reminderSchema = z.object({
+  message: z.string().trim().min(1, "Escreva o lembrete").max(1000, "Máximo de 1000 caracteres"),
+});
+
 export const MACHINE_CATEGORIES = ["CO2", "Fiber", "UV", "Solda Laser"] as const;
 export const MEDIA_TYPES = ["foto", "video", "pdf", "video_teste", "link"] as const;
 export const mediaTypeLabels: Record<(typeof MEDIA_TYPES)[number], string> = {

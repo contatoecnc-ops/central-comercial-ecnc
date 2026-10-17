@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { SLABadge } from "@/components/SLABadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { OriginBadge } from "@/components/OriginBadge";
+import { isOwnTask } from "@/lib/sla";
 import { CommentThread } from "@/components/CommentThread";
 import { TaskActions } from "@/components/TaskActions";
 import { fmtDateTime } from "@/lib/dates";
@@ -13,10 +15,14 @@ export function TaskDetail({
   task,
   comments,
   showAssignee,
+  ownLabel,
+  canCancel,
 }: {
   task: TaskWithAssignee;
   comments: TaskComment[];
   showAssignee?: boolean;
+  ownLabel?: string;
+  canCancel?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -25,6 +31,7 @@ export function TaskDetail({
           <SLABadge dueDate={task.due_date} status={task.status} />
           <PriorityBadge priority={task.priority} />
           <StatusBadge status={task.status} />
+          {ownLabel && isOwnTask(task) && <OriginBadge label={ownLabel} />}
           {task.category && (
             <span className="rounded-md bg-white/5 px-2 py-0.5 text-xs text-muted">{task.category}</span>
           )}
@@ -66,7 +73,7 @@ export function TaskDetail({
         </dl>
       </Card>
 
-      <TaskActions taskId={task.id} status={task.status} />
+      <TaskActions taskId={task.id} status={task.status} canCancel={canCancel} />
 
       <Card className="p-5">
         <CommentThread taskId={task.id} comments={comments} />

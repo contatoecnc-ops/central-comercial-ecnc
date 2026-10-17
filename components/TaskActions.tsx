@@ -3,13 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, Play } from "lucide-react";
+import { CheckCircle2, Play, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/form";
-import { completeTask, startTask } from "@/app/actions/tasks";
+import { cancelOwnTask, completeTask, startTask } from "@/app/actions/tasks";
 import type { TaskStatus } from "@/types/database";
 
-export function TaskActions({ taskId, status }: { taskId: string; status: TaskStatus }) {
+export function TaskActions({
+  taskId,
+  status,
+  canCancel,
+}: {
+  taskId: string;
+  status: TaskStatus;
+  /** só tarefas criadas pelo próprio vendedor */
+  canCancel?: boolean;
+}) {
   const router = useRouter();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,6 +53,17 @@ export function TaskActions({ taskId, status }: { taskId: string; status: TaskSt
         <Button disabled={busy} onClick={() => run(() => completeTask(taskId, note), "Tarefa concluída")}>
           <CheckCircle2 size={16} /> Marcar como Concluída
         </Button>
+        {canCancel && (
+          <Button
+            variant="danger"
+            disabled={busy}
+            onClick={() => {
+              if (window.confirm("Cancelar esta tarefa?")) void run(() => cancelOwnTask(taskId), "Tarefa cancelada");
+            }}
+          >
+            <XCircle size={16} /> Cancelar tarefa
+          </Button>
+        )}
       </div>
     </div>
   );

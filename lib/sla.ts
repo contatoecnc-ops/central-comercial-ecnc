@@ -34,3 +34,6 @@ export function sortTasks<T extends { due_date: string; status: TaskStatus }>(ta
     return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
   });
 }
+
+/** Tarefa criada pelo próprio vendedor (created_by = assigned_to). */
+export const isOwnTask = (t: { created_by: string; assigned_to: string }) => t.created_by === t.assigned_to;

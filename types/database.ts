@@ -1,4 +1,6 @@
-export type Role = "admin" | "vendedor";
+import type { SalesMetrics } from "@/lib/sales/workbook";
+
+export type Role ="admin" | "vendedor";
 export type Priority = "baixa" | "media" | "alta";
 export type TaskStatus = "pendente" | "em_andamento" | "concluida" | "cancelada";
 export type MachineCategory = "CO2" | "Fiber" | "UV" | "Solda Laser";
@@ -10,6 +12,7 @@ export interface Profile {
   email: string;
   role: Role;
   active: boolean;
+  sheet_name: string | null;
   created_at: string;
 }
 
@@ -78,4 +81,34 @@ export interface Manual {
   tags: string[];
   active: boolean;
   created_at: string;
+}
+
+export interface SellerReminder {
+  id: string;
+  seller_id: string;
+  message: string;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalesNumber {
+  id: string;
+  seller_id: string | null;
+  seller_label: string;
+  period: string;
+  metrics: SalesMetrics;
+  synced_at: string;
+}
+
+export interface SalesSyncStatus {
+  id: number;
+  synced_at: string;
+  dados_ate: string | null;
+  total_planilha: number | null;
+  total_resumo_l2: number | null;
+  total_vinculado: number | null;
+  total_outros: number | null;
+  avisos: string[];
 }

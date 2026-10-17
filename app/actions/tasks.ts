@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fromInputValue } from "@/lib/dates";
-import { taskSchema, type TaskInput } from "@/lib/schemas";
+import { ownTaskSchema, taskSchema, type OwnTaskInput, type TaskInput } from "@/lib/schemas";
 
 type Result = { error?: string; id?: string };
 
@@ -103,5 +103,67 @@ export async function completeTask(taskId: string, finalComment?: string): Promi
   });
   if (error) return { error: `Não foi possível concluir: ${error.message}` };
   revalidateTasks(taskId);
+  return {};
+}
+
+// ───────── Tarefas criadas pelo próprio vendedor ─────────
+// assigned_to e created_by são SEMPRE o usuário logado (também imposto pela policy de insert
+// e pelo trigger tasks_guard_vendedor). O input não carrega vendedor.
+
+function toOwnRow(v: OwnTaskInput) {
+  return {
+    title: v.title,
+    description: v.description || null,
+    category: v.category || null,
+    priority: v.priority,
+    status: v.status,
+    due_date: fromInputValue(v.due_date),
+    // completed_at é calculado pelo trigger no banco
+  };
+}
+
+export async function createOwnTask(input: OwnTaskInput): Promise<Result> {
+  const me = await requireProfile("vendedor");
+  const parsed = ownTaskSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const { data, error } = await createClient()
+    .from("tasks")
+    .insert({ ...toOwnRow({ ...parsed.data, status: "pendente" }), assigned_to: me.id, created_by: me.id })
+    .select("id")
+    .single();
+  if (error) return { error: error.message };
+  revalidateTasks();
+  return { id: data.id };
+}
+
+export async function updateOwnTask(id: string, input: OwnTaskInput): Promise<Result> {
+  const me = await requireProfile("vendedor");
+  const parsed = ownTaskSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const { data, error } = await createClient()
+    .from("tasks")
+    .update(toOwnRow(parsed.data))
+    .eq("id", id)
+    .eq("created_by", me.id)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "Tarefa não encontrada ou não foi criada por você" };
+  revalidateTasks(id);
+  return { id };
+}
+
+export async function cancelOwnTask(id: string): Promise<Result> {
+  const me = await requireProfile("vendedor");
+  const { data, error } = await createClient()
+    .from("tasks")
+    .update({ status: "cancelada" })
+    .eq("id", id)
+    .eq("created_by", me.id)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "Só é possível cancelar tarefas criadas por você" };
+  revalidateTasks(id);
   return {};
 }

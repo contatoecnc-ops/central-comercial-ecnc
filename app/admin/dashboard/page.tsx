@@ -3,11 +3,19 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatTile } from "@/components/StatTile";
 import { TaskCard } from "@/components/TaskCard";
 import { Card, EmptyState } from "@/components/ui/card";
-import { listTasks, listVendedores } from "@/lib/queries";
-import { getSLA, isOpen, sortTasks } from "@/lib/sla";
+import { listSalesNumbers, listTasks, listVendedores } from "@/lib/queries";
+import { getSLA, isOpen, isOwnTask, sortTasks } from "@/lib/sla";
+import { COMPANY_LABEL } from "@/lib/sales-config";
+import { fmtBRL, fmtPct, fmtPeriod } from "@/lib/sales/format";
+import { currentPeriodOf, pct } from "@/lib/sales/view";
 
 export default async function AdminDashboard() {
-  const [tasks, vendedores] = await Promise.all([listTasks(), listVendedores(false)]);
+  const [allTasks, vendedores, sales] = await Promise.all([listTasks(), listVendedores(false), listSalesNumbers()]);
+  // SLA só considera tarefas atribuídas pelo gestor; as próprias do vendedor entram em contador separado
+  const tasks = allTasks.filter((t) => !isOwnTask(t));
+  const ownOpen = allTasks.filter((t) => isOwnTask(t) && isOpen(t.status)).length;
+  const salesPeriod = currentPeriodOf(sales);
+  const company = sales.find((s) => s.seller_label === COMPANY_LABEL && s.period === salesPeriod);
   const now = Date.now();
   const open = tasks.filter((t) => isOpen(t.status));
   const sla = (t: (typeof tasks)[number]) => getSLA(t.due_date, t.status, now).key;
@@ -38,6 +46,37 @@ export default async function AdminDashboard() {
         <StatTile label="Vencem em 24h" value={soon.length} tone="warn" />
         <StatTile label="Concluídas" value={tasks.filter((t) => t.status === "concluida").length} tone="ok" />
       </div>
+      <p className="mt-3 text-xs text-muted">
+        Índices de SLA consideram só tarefas atribuídas pelo gestor. Tarefas próprias dos vendedores abertas:{" "}
+        <Link href="/admin/tarefas?origem=vendedor" className="font-semibold text-white hover:text-brand">
+          {ownOpen}
+        </Link>
+      </p>
+
+      {company && salesPeriod && (
+        <>
+          <h2 className="mb-3 mt-10 flex items-baseline justify-between text-sm font-bold uppercase tracking-wide">
+            <span>Vendas · {fmtPeriod(salesPeriod)}</span>
+            <Link href="/admin/vendas" className="text-xs font-semibold normal-case text-muted hover:text-brand">
+              Ver detalhes
+            </Link>
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">Vendas do mês</p>
+              <p className="mt-2 text-2xl font-extrabold tabular-nums">{fmtBRL(company.metrics.vendas)}</p>
+            </Card>
+            <Card className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">Meta do mês</p>
+              <p className="mt-2 text-2xl font-extrabold tabular-nums">{fmtBRL(company.metrics.meta)}</p>
+            </Card>
+            <Card className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">% da meta</p>
+              <p className="mt-2 text-2xl font-extrabold tabular-nums">{fmtPct(pct(company.metrics.vendas, company.metrics.meta))}</p>
+            </Card>
+          </div>
+        </>
+      )}
 
       <h2 className="mb-3 mt-10 text-sm font-bold uppercase tracking-wide">Por vendedor</h2>
       {rows.length === 0 ? (

@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { SLABadge } from "@/components/SLABadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { OriginBadge } from "@/components/OriginBadge";
+import { isOwnTask } from "@/lib/sla";
 import { fmtDateTime } from "@/lib/dates";
 import type { TaskWithAssignee } from "@/types/database";
 
@@ -11,10 +13,13 @@ export function TaskCard({
   task,
   href,
   showAssignee,
+  ownLabel,
 }: {
   task: TaskWithAssignee;
   href: string;
   showAssignee?: boolean;
+  /** texto do badge para tarefas criadas pelo vendedor (ex.: "Minha") */
+  ownLabel?: string;
 }) {
   return (
     <Link href={href} className="block">
@@ -37,6 +42,7 @@ export function TaskCard({
           )}
           <PriorityBadge priority={task.priority} />
           <StatusBadge status={task.status} />
+          {ownLabel && isOwnTask(task) && <OriginBadge label={ownLabel} />}
         </div>
       </Card>
     </Link>

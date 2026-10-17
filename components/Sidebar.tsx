@@ -10,6 +10,7 @@ import {
   ListChecks,
   LogOut,
   Menu,
+  TrendingUp,
   Users,
   X,
   type LucideIcon,
@@ -29,6 +30,7 @@ const NAV: Record<Role, NavItem[]> = {
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/tarefas", label: "Tarefas", icon: ListChecks },
+    { href: "/admin/vendas", label: "Vendas", icon: TrendingUp },
     { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },
     { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
