@@ -129,3 +129,46 @@ export interface SalesSyncStatus {
   total_outros: number | null;
   avisos: string[];
 }
+
+export interface ContentItem {
+  id: string;
+  title: string;
+  caption: string | null;
+  channels: string[];
+  format: string | null;
+  machine_id: string | null;
+  campaign: string | null;
+  status: import("@/lib/marketing-config").ContentStatus;
+  scheduled_for: string | null;
+  assigned_to: string | null;
+  created_by: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentFile {
+  id: string;
+  content_id: string;
+  storage_path: string | null;
+  external_url: string | null;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  kind: import("@/lib/marketing-config").FileKindContent;
+  version: number;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface ContentEvent {
+  id: string;
+  content_id: string;
+  actor_id: string | null;
+  event_type: "status_change" | "comment" | "file_added";
+  from_status: string | null;
+  to_status: string | null;
+  body: string | null;
+  created_at: string;
+}

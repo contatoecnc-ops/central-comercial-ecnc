@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
+  Megaphone,
   Cpu,
   LayoutDashboard,
   ListChecks,
@@ -33,12 +34,14 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/vendas", label: "Vendas", icon: TrendingUp },
     { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },
     { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
+    { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
   ],
   marketing: [
     { href: "/marketing/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },
     { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
+    { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
   ],
   vendedor: [
     { href: "/vendedor/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -48,7 +51,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
 };
 
-export function Sidebar({ role, name }: { role: Role; name: string }) {
+export function Sidebar({ role, name, badges = {} }: { role: Role; name: string; badges?: Record<string, number> }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -78,6 +81,9 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
             >
               <Icon size={18} className={active ? "text-brand" : ""} />
               {label}
+              {badges[href] ? (
+                <span className="ml-auto rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">{badges[href]}</span>
+              ) : null}
             </Link>
           );
         })}

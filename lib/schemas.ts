@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CHANNELS, FORMATS } from "@/lib/marketing-config";
 
 export const taskSchema = z.object({
   title: z.string().trim().min(1, "Informe o título"),
@@ -85,3 +86,15 @@ export const userSchema = z.object({
   role: z.enum(["admin", "vendedor", "marketing"]),
 });
 export type UserInput = z.infer<typeof userSchema>;
+
+export const contentSchema = z.object({
+  title: z.string().trim().min(1, "Informe o título").max(200, "Título muito longo"),
+  caption: z.string().max(10000, "Legenda muito longa").optional(),
+  channels: z.array(z.string()).refine((c) => c.every((x) => (CHANNELS as readonly string[]).includes(x)), "Canal inválido"),
+  format: z.string().refine((v) => v === "" || (FORMATS as readonly string[]).includes(v), "Formato inválido").optional(),
+  machine_id: z.string().refine((v) => v === "" || /^[0-9a-f-]{36}$/i.test(v), "Produto inválido").optional(),
+  campaign: z.string().trim().max(120, "Campanha muito longa").optional(),
+  scheduled_for: z.string().optional(), // datetime-local (horário de São Paulo) ou vazio
+  assigned_to: z.string().refine((v) => v === "" || /^[0-9a-f-]{36}$/i.test(v), "Responsável inválido").optional(),
+});
+export type ContentInput = z.infer<typeof contentSchema>;

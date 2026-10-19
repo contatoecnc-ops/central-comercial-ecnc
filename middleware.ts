@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   const home = `/${profile.role}/dashboard`;
   if (pathname === "/login") return redirectTo(home);
   // Marketing usa só o próprio painel e as telas compartilhadas de catálogo e manuais.
-  const marketingShared = /^\/admin\/(catalogo|manuais)(\/|$)/.test(pathname);
+  const marketingShared = /^\/admin\/(catalogo|manuais|conteudo)(\/|$)/.test(pathname);
   if (pathname.startsWith("/admin") && !(profile.role === "admin" || (profile.role === "marketing" && marketingShared))) {
     return redirectTo(home);
   }

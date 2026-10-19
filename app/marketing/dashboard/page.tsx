@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { BookOpen, Cpu } from "lucide-react";
+import { BookOpen, Cpu, Megaphone } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
+import { ContentSummary } from "@/components/ContentSummary";
 import { requireProfile } from "@/lib/auth";
 
 export default async function MarketingDashboard() {
@@ -9,6 +10,7 @@ export default async function MarketingDashboard() {
   const shortcuts = [
     { href: "/admin/catalogo", label: "Catálogo", hint: "Produtos, fotos e vídeos", icon: Cpu },
     { href: "/admin/manuais", label: "Manuais", hint: "Links e dicas em texto", icon: BookOpen },
+    { href: "/admin/conteudo", label: "Conteúdo", hint: "Pedidos, aprovações e calendário", icon: Megaphone },
   ];
   return (
     <>
@@ -25,6 +27,9 @@ export default async function MarketingDashboard() {
             </Card>
           </Link>
         ))}
+      </div>
+      <div className="mt-10">
+        <ContentSummary role="marketing" />
       </div>
     </>
   );
