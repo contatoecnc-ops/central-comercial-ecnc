@@ -72,14 +72,31 @@ export interface MachineMedia {
   sort_order: number;
 }
 
+export type ManualKind = "link" | "texto" | "tabela_preco";
+
 export interface Manual {
   id: string;
+  kind: ManualKind;
   title: string;
   category: string;
   description: string | null;
-  drive_url: string;
+  drive_url: string | null;
+  content: string | null;
+  valid_from: string | null;
   tags: string[];
   active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManualFile {
+  id: string;
+  manual_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  sort_order: number;
   created_at: string;
 }
 

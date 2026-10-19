@@ -7,6 +7,7 @@ import type {
   SellerReminder,
   MachineMedia,
   Manual,
+  ManualFile,
   Profile,
   TaskComment,
   TaskWithAssignee,
@@ -73,6 +74,22 @@ export async function listManuals(opts?: { onlyActive?: boolean }) {
   if (opts?.onlyActive) q = q.eq("active", true);
   const { data } = await q.order("category").order("title");
   return (data ?? []) as Manual[];
+}
+
+export async function getManual(id: string) {
+  const supabase = createClient();
+  const { data } = await supabase.from("manuals").select("*").eq("id", id).maybeSingle();
+  return (data as Manual | null) ?? null;
+}
+
+/** Arquivos de manuais (o RLS já esconde os de manual inativo para o vendedor). */
+export async function listManualFiles(manualIds?: string[]) {
+  if (manualIds && manualIds.length === 0) return [] as ManualFile[];
+  const supabase = createClient();
+  let q = supabase.from("manual_files").select("*");
+  if (manualIds) q = q.in("manual_id", manualIds);
+  const { data } = await q.order("sort_order").order("created_at");
+  return (data ?? []) as ManualFile[];
 }
 
 export async function listActiveReminders(sellerId: string) {

@@ -2,10 +2,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, EmptyState } from "@/components/ui/card";
 import { ManualForm } from "@/components/ManualForm";
 import { ManualAdminItem } from "@/components/ManualAdminItem";
-import { listManuals } from "@/lib/queries";
+import { listManualFiles, listManuals } from "@/lib/queries";
 
 export default async function AdminManuaisPage() {
-  const manuals = await listManuals();
+  const [manuals, allFiles] = await Promise.all([listManuals(), listManualFiles()]);
   const categories = Array.from(new Set(manuals.map((m) => m.category))).sort();
 
   return (
@@ -22,7 +22,12 @@ export default async function AdminManuaisPage() {
       ) : (
         <Card className="divide-y divide-border">
           {manuals.map((m) => (
-            <ManualAdminItem key={m.id} manual={m} categories={categories} />
+            <ManualAdminItem
+              key={m.id}
+              manual={m}
+              files={allFiles.filter((f) => f.manual_id === m.id)}
+              categories={categories}
+            />
           ))}
         </Card>
       )}

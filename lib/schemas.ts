@@ -53,14 +53,29 @@ export const machineSchema = z.object({
 });
 export type MachineInput = z.infer<typeof machineSchema>;
 
-export const manualSchema = z.object({
-  title: z.string().trim().min(1, "Informe o título"),
-  category: z.string().trim().min(1, "Informe a categoria"),
-  description: z.string().trim().optional(),
-  drive_url: z.string().trim().regex(/^https?:\/\//i, "URL inválida"),
-  tags: z.string().trim().optional(), // separadas por vírgula
-  active: z.boolean(),
-});
+export const manualSchema = z
+  .object({
+    kind: z.enum(["link", "texto", "tabela_preco"]),
+    title: z.string().trim().min(1, "Informe o título"),
+    category: z.string().trim().min(1, "Informe a categoria"),
+    description: z.string().trim().optional(),
+    drive_url: z.string().trim().optional(),
+    content: z.string().max(20000, "Texto muito longo (máx. 20.000 caracteres)").optional(),
+    valid_from: z.string().optional(), // yyyy-MM-dd
+    tags: z.string().trim().optional(), // separadas por vírgula
+    active: z.boolean(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.kind === "link" && !/^https?:\/\//i.test(v.drive_url ?? "")) {
+      ctx.addIssue({ code: "custom", path: ["drive_url"], message: "URL inválida" });
+    }
+    if (v.kind === "texto" && !v.content?.trim()) {
+      ctx.addIssue({ code: "custom", path: ["content"], message: "Escreva o texto da dica" });
+    }
+    if (v.kind === "tabela_preco" && !/^\d{4}-\d{2}-\d{2}$/.test(v.valid_from ?? "")) {
+      ctx.addIssue({ code: "custom", path: ["valid_from"], message: "Informe a data de vigência" });
+    }
+  });
 export type ManualInput = z.infer<typeof manualSchema>;
 
 export const userSchema = z.object({
