@@ -1,9 +1,11 @@
+import { requireProfile } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { TaskForm } from "@/components/TaskForm";
 import { listVendedores } from "@/lib/queries";
 
 export default async function NovaTarefaPage() {
+  await requireProfile("admin");
   const vendedores = await listVendedores();
   return (
     <>

@@ -25,7 +25,9 @@ export function ManualAdminItem({
   manual,
   files,
   categories,
+  readOnly = false,
 }: {
+  readOnly?: boolean;
   manual: Manual;
   files: ManualFile[];
   categories: string[];
@@ -89,10 +91,14 @@ export function ManualAdminItem({
             </Button>
           </Link>
         )}
-        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-          <Pencil size={14} /> Editar
-        </Button>
-        <DeleteButton action={deleteManual.bind(null, manual.id)} confirmText={`Excluir "${manual.title}"?`} />
+        {!readOnly && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <Pencil size={14} /> Editar
+            </Button>
+            <DeleteButton action={deleteManual.bind(null, manual.id)} confirmText={`Excluir "${manual.title}"?`} />
+          </>
+        )}
       </div>
     </div>
   );

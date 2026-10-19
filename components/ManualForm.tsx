@@ -24,12 +24,15 @@ export function ManualForm({
   defaults,
   existingFiles = [],
   categories,
+  canTablePrice = true,
   onDone,
 }: {
   manualId?: string;
   defaults?: Partial<ManualInput>;
   existingFiles?: ManualFile[];
   categories: string[];
+  /** Só o admin cria/edita tabela de preços; o marketing não vê essa opção. */
+  canTablePrice?: boolean;
   onDone?: () => void;
 }) {
   const router = useRouter();
@@ -130,7 +133,7 @@ export function ManualForm({
         <Select disabled={!!manualId} {...register("kind")}>
           <option value="link">Link (Google Drive)</option>
           <option value="texto">Texto (dica rápida)</option>
-          <option value="tabela_preco">Tabela de preços (arquivos)</option>
+          {canTablePrice && <option value="tabela_preco">Tabela de preços (arquivos)</option>}
         </Select>
       </Field>
       <Field label="Título" error={errors.title?.message}>

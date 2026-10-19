@@ -1,3 +1,4 @@
+import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { RemindersManager } from "@/components/RemindersManager";
@@ -5,6 +6,7 @@ import { listRemindersForSeller } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function LembretesPage({ params }: { params: { id: string } }) {
+  await requireProfile("admin");
   const supabase = createClient();
   const { data: seller } = await supabase
     .from("profiles")

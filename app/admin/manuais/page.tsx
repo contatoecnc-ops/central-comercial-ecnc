@@ -2,9 +2,12 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, EmptyState } from "@/components/ui/card";
 import { ManualForm } from "@/components/ManualForm";
 import { ManualAdminItem } from "@/components/ManualAdminItem";
+import { requireProfile } from "@/lib/auth";
 import { listManualFiles, listManuals } from "@/lib/queries";
 
 export default async function AdminManuaisPage() {
+  const me = await requireProfile(["admin", "marketing"]);
+  const isAdmin = me.role === "admin";
   const [manuals, allFiles] = await Promise.all([listManuals(), listManualFiles()]);
   const categories = Array.from(new Set(manuals.map((m) => m.category))).sort();
 
@@ -14,7 +17,7 @@ export default async function AdminManuaisPage() {
 
       <Card className="mb-8 p-5">
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wide">Novo manual</h2>
-        <ManualForm categories={categories} />
+        <ManualForm categories={categories} canTablePrice={isAdmin} />
       </Card>
 
       {manuals.length === 0 ? (
@@ -27,6 +30,7 @@ export default async function AdminManuaisPage() {
               manual={m}
               files={allFiles.filter((f) => f.manual_id === m.id)}
               categories={categories}
+              readOnly={!isAdmin && m.kind === "tabela_preco"}
             />
           ))}
         </Card>

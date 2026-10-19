@@ -1,3 +1,4 @@
+import { requireProfile } from "@/lib/auth";
 import { Pencil } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { getTaskWithComments, listVendedores } from "@/lib/queries";
 import { toInputValue } from "@/lib/dates";
 
 export default async function AdminTarefaDetalhe({ params }: { params: { id: string } }) {
+  await requireProfile("admin");
   const [{ task, comments }, vendedores] = await Promise.all([
     getTaskWithComments(params.id),
     listVendedores(false),

@@ -1,3 +1,4 @@
+import { requireProfile } from "@/lib/auth";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -17,6 +18,7 @@ export default async function AdminTarefasPage({
 }: {
   searchParams: { vendedor?: string; status?: string; sla?: string; origem?: string };
 }) {
+  await requireProfile("admin");
   const [tasks, vendedores] = await Promise.all([
     listTasks({ assignedTo: searchParams.vendedor, status: searchParams.status }),
     listVendedores(false),

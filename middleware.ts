@@ -48,12 +48,17 @@ export async function middleware(request: NextRequest) {
 
   const home = `/${profile.role}/dashboard`;
   if (pathname === "/login") return redirectTo(home);
-  if (pathname.startsWith("/admin") && profile.role !== "admin") return redirectTo(home);
+  // Marketing usa só o próprio painel e as telas compartilhadas de catálogo e manuais.
+  const marketingShared = /^\/admin\/(catalogo|manuais)(\/|$)/.test(pathname);
+  if (pathname.startsWith("/admin") && !(profile.role === "admin" || (profile.role === "marketing" && marketingShared))) {
+    return redirectTo(home);
+  }
   if (pathname.startsWith("/vendedor") && profile.role !== "vendedor") return redirectTo(home);
+  if (pathname.startsWith("/marketing") && profile.role !== "marketing") return redirectTo(home);
 
   return response;
 }
 
 export const config = {
-  matcher: ["/login", "/admin/:path*", "/vendedor/:path*"],
+  matcher: ["/login", "/admin/:path*", "/vendedor/:path*", "/marketing/:path*"],
 };

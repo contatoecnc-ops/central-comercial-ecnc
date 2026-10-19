@@ -62,7 +62,7 @@ export async function saveManual(
   input: ManualInput,
   files: ManualFilePlan[] = []
 ): Promise<Result> {
-  await requireProfile("admin");
+  const me = await requireProfile(["admin", "marketing"]);
   if (!UUID.test(manualId)) return { error: "Manual inválido" };
 
   const newPaths = files.flatMap((f) => ("path" in f ? [f.path] : []));
@@ -74,6 +74,8 @@ export async function saveManual(
   const parsed = manualSchema.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const isTable = parsed.data.kind === "tabela_preco";
+  // tabela de preços é só do admin (o RLS também recusa)
+  if (me.role !== "admin" && isTable) return fail("Apenas o admin gerencia tabelas de preço");
 
   if (isTable) {
     if (files.length < 1) return fail("Envie ao menos 1 arquivo");
@@ -101,6 +103,7 @@ export async function saveManual(
     const { data: existing } = await supabase.from("manuals").select("kind").eq("id", manualId).maybeSingle();
     if (!existing) return fail("Manual não encontrado");
     if (existing.kind !== parsed.data.kind) return fail("Não é possível mudar o tipo de um manual");
+    if (me.role !== "admin" && existing.kind === "tabela_preco") return fail("Apenas o admin gerencia tabelas de preço");
   }
 
   const keptIds = new Set(files.flatMap((f) => ("existingId" in f ? [f.existingId] : [])));
@@ -157,9 +160,14 @@ export async function saveManual(
 }
 
 export async function deleteManual(id: string): Promise<Result> {
-  await requireProfile("admin");
+  const me = await requireProfile(["admin", "marketing"]);
   if (!UUID.test(id)) return { error: "Manual inválido" };
   const supabase = createClient();
+
+  if (me.role !== "admin") {
+    const { data: m } = await supabase.from("manuals").select("kind").eq("id", id).maybeSingle();
+    if (m?.kind === "tabela_preco") return { error: "Apenas o admin gerencia tabelas de preço" };
+  }
 
   // o cascade do banco apaga os registros, mas não os objetos do Storage
   const { data: files } = await supabase.from("manual_files").select("storage_path").eq("manual_id", id);

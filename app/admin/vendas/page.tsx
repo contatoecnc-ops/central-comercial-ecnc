@@ -1,3 +1,4 @@
+import { requireProfile } from "@/lib/auth";
 import Link from "next/link";
 import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -29,6 +30,7 @@ const COLUMNS = [
 ] as const;
 
 export default async function AdminVendasPage({ searchParams }: { searchParams: { mes?: string; sort?: string; dir?: string } }) {
+  await requireProfile("admin");
   const [rows, vendedores, status] = await Promise.all([listSalesNumbers(), listVendedores(false), getSalesStatus()]);
   const source = getSalesSource();
   const names = new Map(vendedores.map((v) => [v.id, v.full_name]));

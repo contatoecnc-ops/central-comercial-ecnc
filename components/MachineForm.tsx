@@ -8,15 +8,21 @@ import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { CatalogImageUpload } from "@/components/CatalogImageUpload";
 import { createMachine, updateMachine } from "@/app/actions/machines";
 import { MACHINE_CATEGORIES, MEDIA_TYPES, machineSchema, mediaTypeLabels, type MachineInput } from "@/lib/schemas";
 
 export function MachineForm({ machineId, defaults }: { machineId?: string; defaults?: Partial<MachineInput> }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  // id gerado antes do upload: as fotos ficam em {machine_id}/{uuid}.{ext}
+  const [newId] = useState(() => crypto.randomUUID());
+  const uploadId = machineId ?? newId;
   const {
     register,
     control,
+    setValue,
+    watch,
     handleSubmit,
     formState: { errors },
   } = useForm<MachineInput>({
@@ -39,7 +45,7 @@ export function MachineForm({ machineId, defaults }: { machineId?: string; defau
 
   async function onSubmit(values: MachineInput) {
     setSaving(true);
-    const res = machineId ? await updateMachine(machineId, values) : await createMachine(values);
+    const res = machineId ? await updateMachine(machineId, values) : await createMachine(values, newId);
     setSaving(false);
     if (res.error) return void toast.error(res.error);
     toast.success(machineId ? "Máquina atualizada" : "Máquina criada");
@@ -68,8 +74,14 @@ export function MachineForm({ machineId, defaults }: { machineId?: string; defau
         <Field label="Descrição" className="sm:col-span-2">
           <Textarea className="min-h-[140px]" {...register("description")} />
         </Field>
-        <Field label="URL da imagem principal" error={errors.thumbnail_url?.message} className="sm:col-span-2">
-          <Input placeholder="https://..." {...register("thumbnail_url")} />
+        <Field label="Imagem principal" error={errors.thumbnail_url?.message} className="sm:col-span-2" hint="Envie uma imagem (PNG, JPG ou WEBP, até 10 MB) ou cole uma URL">
+          <div className="flex gap-2">
+            <Input placeholder="https://..." {...register("thumbnail_url")} />
+            <CatalogImageUpload
+              machineId={uploadId}
+              onUploaded={(url) => setValue("thumbnail_url", url, { shouldDirty: true, shouldValidate: true })}
+            />
+          </div>
         </Field>
         <Field label="Ordem de exibição">
           <Input type="number" {...register("sort_order", { valueAsNumber: true })} />
@@ -111,7 +123,7 @@ export function MachineForm({ machineId, defaults }: { machineId?: string; defau
           </Button>
         </div>
         {media.fields.map((f, i) => (
-          <div key={f.id} className="grid gap-2 sm:grid-cols-[150px_1fr_2fr_auto]">
+          <div key={f.id} className="grid gap-2 sm:grid-cols-[150px_1fr_2fr_auto_auto]">
             <Select {...register(`media.${i}.type`)}>
               {MEDIA_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -121,6 +133,17 @@ export function MachineForm({ machineId, defaults }: { machineId?: string; defau
             </Select>
             <Input placeholder="Título" {...register(`media.${i}.title`)} />
             <Input placeholder="https:// (Drive, YouTube, Vimeo...)" {...register(`media.${i}.url`)} />
+            {watch(`media.${i}.type`) === "foto" ? (
+              <CatalogImageUpload
+                machineId={uploadId}
+                onUploaded={(url, name) => {
+                  setValue(`media.${i}.url`, url, { shouldDirty: true, shouldValidate: true });
+                  if (!watch(`media.${i}.title`)) setValue(`media.${i}.title`, name.replace(/.[^.]+$/, ""), { shouldValidate: true });
+                }}
+              />
+            ) : (
+              <span />
+            )}
             <Button type="button" variant="ghost" size="sm" className="h-10" onClick={() => media.remove(i)} aria-label="Remover">
               <X size={16} />
             </Button>

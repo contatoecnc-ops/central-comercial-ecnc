@@ -10,9 +10,11 @@ export async function getProfile(): Promise<Profile | null> {
   return (data as Profile) ?? null;
 }
 
-export async function requireProfile(role?: Role): Promise<Profile> {
+/** Exige sessão ativa e, se informado, um dos papéis. Quem não tem o papel vai para o próprio dashboard. */
+export async function requireProfile(role?: Role | Role[]): Promise<Profile> {
   const profile = await getProfile();
   if (!profile || !profile.active) redirect("/login");
-  if (role && profile.role !== role) redirect(`/${profile.role}/dashboard`);
+  const allowed = role === undefined ? null : Array.isArray(role) ? role : [role];
+  if (allowed && !allowed.includes(profile.role)) redirect(`/${profile.role}/dashboard`);
   return profile;
 }
