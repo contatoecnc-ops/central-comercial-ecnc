@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/card";
 import { DeleteButton } from "@/components/DeleteButton";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { AddVersionPanel, ContentForm } from "@/components/ContentForm";
-import { CommentForm, ScheduleField, StatusButtons } from "@/components/ContentActions";
-import { ChannelChips, ContentNav, FileGallery, StatusPill } from "@/components/ContentBits";
+import { CommentForm, PriorityField, ScheduleField, StatusButtons } from "@/components/ContentActions";
+import { ChannelChips, ContentNav, FileGallery, PriorityTag, SourceTag, StatusPill } from "@/components/ContentBits";
 import { deleteContent } from "@/app/actions/content";
 import { requireProfile } from "@/lib/auth";
 import { countPendingApproval, getContent, listStaff, profileNames } from "@/lib/content-queries";
@@ -41,6 +41,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
         breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Detalhe" }]}
         actions={
           <div className="flex items-center gap-2">
+            <PriorityTag priority={item.priority} />
             <StatusPill status={item.status} />
             {canDelete && (
               <DeleteButton
@@ -57,6 +58,12 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
           <Card className="space-y-4 p-5">
+            {(item.source_label || item.brief) && (
+              <div className="space-y-2 rounded-md border border-sky-500/30 bg-sky-500/5 p-3">
+                <SourceTag label={item.source_label} />
+                {item.brief && <p className="whitespace-pre-wrap text-sm">{item.brief}</p>}
+              </div>
+            )}
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-xs uppercase text-muted">Canais</dt>
@@ -69,6 +76,12 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
               <div>
                 <dt className="text-xs uppercase text-muted">Produto</dt>
                 <dd>{machine?.name ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase text-muted">Prioridade</dt>
+                <dd>
+                  <PriorityField contentId={item.id} value={item.priority} />
+                </dd>
               </div>
               <div>
                 <dt className="text-xs uppercase text-muted">Campanha</dt>
@@ -111,7 +124,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
             {canAddFiles(item.status) ? (
               <div className="space-y-2 border-t border-border pt-4">
                 <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Adicionar nova versão</h3>
-                <AddVersionPanel contentId={item.id} />
+                <AddVersionPanel contentId={item.id} fromRequest={!!item.source_label} />
               </div>
             ) : (
               <p className="border-t border-border pt-3 text-xs text-muted">
@@ -137,6 +150,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
                   format: item.format ?? "",
                   machine_id: item.machine_id ?? "",
                   campaign: item.campaign ?? "",
+                  priority: item.priority,
                   assigned_to: item.assigned_to ?? "",
                 }}
               />

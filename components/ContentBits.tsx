@@ -12,11 +12,14 @@ import { signedContentUrl } from "@/lib/content-queries";
 import {
   CHANNEL_SHORT,
   FILE_KIND_LABEL,
+  PRIORITY_COLOR,
+  PRIORITY_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
   isImageMime,
   isVideoMime,
   transitionsFor,
+  type ContentPriority,
   type ContentStatus,
 } from "@/lib/marketing-config";
 import type { ContentFile, ContentItem, Role } from "@/types/database";
@@ -27,6 +30,25 @@ export function StatusPill({ status, className }: { status: ContentStatus; class
   return (
     <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold", STATUS_COLOR[status], className)}>
       {STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+/** Etiqueta de prioridade (Mínima cinza, Média amarela, Urgente vermelha). */
+export function PriorityTag({ priority, className }: { priority: ContentPriority; className?: string }) {
+  return (
+    <span className={cn("inline-flex rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide", PRIORITY_COLOR[priority], className)}>
+      {PRIORITY_LABEL[priority]}
+    </span>
+  );
+}
+
+/** "Solicitação de <vendedor>" quando o conteúdo nasceu de um pedido aprovado. */
+export function SourceTag({ label }: { label: string | null }) {
+  if (!label) return null;
+  return (
+    <span className="inline-flex rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+      {label}
     </span>
   );
 }
@@ -44,15 +66,26 @@ export function ChannelChips({ channels }: { channels: string[] }) {
   );
 }
 
-const TABS = [
+const TABS: { href: string; label: string; adminOnly?: boolean; badge?: "pending" | "requests" }[] = [
   { href: "/admin/conteudo", label: "Resumo" },
   { href: "/admin/conteudo/quadro", label: "Quadro" },
   { href: "/admin/conteudo/calendario", label: "Calendário" },
-  { href: "/admin/conteudo/aprovacoes", label: "Aprovações", adminOnly: true },
+  { href: "/admin/conteudo/aprovacoes", label: "Aprovações", adminOnly: true, badge: "pending" },
+  { href: "/admin/conteudo/solicitacoes", label: "Solicitações", adminOnly: true, badge: "requests" },
   { href: "/admin/conteudo/novo", label: "Novo conteúdo" },
 ];
 
-export function ContentNav({ role, active, pending = 0 }: { role: Role; active: string; pending?: number }) {
+export function ContentNav({
+  role,
+  active,
+  pending = 0,
+  requests = 0,
+}: {
+  role: Role;
+  active: string;
+  pending?: number;
+  requests?: number;
+}) {
   return (
     <nav className="mb-6 flex flex-wrap gap-1 border-b border-border">
       {TABS.filter((t) => !t.adminOnly || role === "admin").map((t) => (
@@ -65,8 +98,10 @@ export function ContentNav({ role, active, pending = 0 }: { role: Role; active: 
           )}
         >
           {t.label}
-          {t.adminOnly && pending > 0 && (
-            <span className="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">{pending}</span>
+          {t.badge && (t.badge === "pending" ? pending : requests) > 0 && (
+            <span className="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {t.badge === "pending" ? pending : requests}
+            </span>
           )}
         </Link>
       ))}
@@ -100,6 +135,10 @@ export function ContentCard({
           </div>
         )}
         <p className="text-sm font-semibold leading-snug">{item.title}</p>
+        <div className="flex flex-wrap items-center gap-1">
+          <PriorityTag priority={item.priority} />
+          <SourceTag label={item.source_label} />
+        </div>
         <ChannelChips channels={item.channels} />
         <p className="text-xs text-muted">
           {item.scheduled_for ? fmtDateTime(item.scheduled_for) : "Sem data"}

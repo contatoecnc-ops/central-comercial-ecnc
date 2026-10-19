@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CHANNELS, FORMATS } from "@/lib/marketing-config";
+import { CHANNELS, FORMATS, PRIORITIES, REQUEST_TYPES } from "@/lib/marketing-config";
 
 export const taskSchema = z.object({
   title: z.string().trim().min(1, "Informe o título"),
@@ -94,7 +94,18 @@ export const contentSchema = z.object({
   format: z.string().refine((v) => v === "" || (FORMATS as readonly string[]).includes(v), "Formato inválido").optional(),
   machine_id: z.string().refine((v) => v === "" || /^[0-9a-f-]{36}$/i.test(v), "Produto inválido").optional(),
   campaign: z.string().trim().max(120, "Campanha muito longa").optional(),
+  priority: z.enum(PRIORITIES),
   scheduled_for: z.string().optional(), // datetime-local (horário de São Paulo) ou vazio
   assigned_to: z.string().refine((v) => v === "" || /^[0-9a-f-]{36}$/i.test(v), "Responsável inválido").optional(),
 });
 export type ContentInput = z.infer<typeof contentSchema>;
+
+export const requestSchema = z.object({
+  title: z.string().trim().min(1, "Informe o título").max(140, "Título muito longo (máx. 140)"),
+  description: z.string().trim().min(1, "Descreva o que você precisa").max(4000, "Descrição muito longa (máx. 4.000)"),
+  request_type: z.string().refine((v) => (REQUEST_TYPES as readonly string[]).includes(v), "Escolha o tipo"),
+  machine_id: z.string().refine((v) => v === "" || /^[0-9a-f-]{36}$/i.test(v), "Máquina inválida").optional(),
+  desired_by: z.string().refine((v) => v === "" || /^\d{4}-\d{2}-\d{2}$/.test(v), "Data inválida").optional(),
+  priority: z.enum(PRIORITIES),
+});
+export type RequestInput = z.infer<typeof requestSchema>;

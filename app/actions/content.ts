@@ -7,6 +7,7 @@ import { contentSchema, type ContentInput } from "@/lib/schemas";
 import { fromInputValue } from "@/lib/dates";
 import {
   CONTENT_BUCKET,
+  PRIORITIES,
   CONTENT_EXT_MIME,
   CONTENT_MAX_BYTES,
   FILE_KINDS,
@@ -54,6 +55,7 @@ function itemRow(v: ContentInput) {
     format: v.format || null,
     machine_id: v.machine_id || null,
     campaign: v.campaign || null,
+    priority: v.priority,
     scheduled_for: v.scheduled_for ? fromInputValue(v.scheduled_for) : null,
     assigned_to: v.assigned_to || null,
   };
@@ -151,6 +153,16 @@ export async function setSchedule(id: string, value: string): Promise<Result> {
   return {};
 }
 
+/** Prioridade é metadado: admin e marketing alteram em qualquer status. */
+export async function setPriority(id: string, priority: string): Promise<Result> {
+  await requireProfile(["admin", "marketing"]);
+  if (!UUID.test(id) || !(PRIORITIES as readonly string[]).includes(priority)) return { error: "Pedido inválido" };
+  const { error } = await createClient().from("content_items").update({ priority }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidateContent(id);
+  return {};
+}
+
 export async function changeStatus(id: string, to: ContentStatus, comment?: string): Promise<Result> {
   await requireProfile(["admin", "marketing"]);
   if (!UUID.test(id) || !STATUS_ORDER.includes(to)) return { error: "Pedido inválido" };
@@ -216,7 +228,7 @@ export async function deleteContentFile(fileId: string): Promise<Result> {
   const supabase = createClient();
   const { data: file } = await supabase
     .from("content_files")
-    .select("storage_path, content_id")
+    .select("storage_path, bucket, content_id")
     .eq("id", fileId)
     .maybeSingle();
   if (!file) return { error: "Arquivo não encontrado" };
@@ -224,7 +236,8 @@ export async function deleteContentFile(fileId: string): Promise<Result> {
   const { data, error } = await supabase.from("content_files").delete().eq("id", fileId).select("id");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Não foi possível apagar (conteúdo aprovado ou publicado está travado)" };
-  if (file.storage_path) await removeObjects([file.storage_path as string]);
+  // referências vindas de solicitação ficam no bucket do vendedor: daqui só saem objetos do bucket "marketing"
+  if (file.storage_path && file.bucket === "marketing") await removeObjects([file.storage_path as string]);
   revalidateContent(file.content_id as string);
   return {};
 }
@@ -233,12 +246,12 @@ export async function deleteContent(id: string): Promise<Result> {
   await requireProfile(["admin", "marketing"]);
   if (!UUID.test(id)) return { error: "Conteúdo inválido" };
   const supabase = createClient();
-  const { data: files } = await supabase.from("content_files").select("storage_path").eq("content_id", id);
+  const { data: files } = await supabase.from("content_files").select("storage_path, bucket").eq("content_id", id);
   const { data, error } = await supabase.from("content_items").delete().eq("id", id).select("id");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Sem permissão para excluir este conteúdo" };
   // o cascade apaga as linhas; os objetos do Storage saem aqui
-  await removeObjects((files ?? []).flatMap((f) => (f.storage_path ? [f.storage_path as string] : [])));
+  await removeObjects((files ?? []).flatMap((f) => (f.storage_path && f.bucket === "marketing" ? [f.storage_path as string] : [])));
   revalidateContent();
   return {};
 }

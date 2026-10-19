@@ -139,6 +139,9 @@ export interface ContentItem {
   machine_id: string | null;
   campaign: string | null;
   status: import("@/lib/marketing-config").ContentStatus;
+  priority: import("@/lib/marketing-config").ContentPriority;
+  brief: string | null;
+  source_label: string | null;
   scheduled_for: string | null;
   assigned_to: string | null;
   created_by: string;
@@ -151,6 +154,7 @@ export interface ContentItem {
 export interface ContentFile {
   id: string;
   content_id: string;
+  bucket: "marketing" | "solicitacoes";
   storage_path: string | null;
   external_url: string | null;
   file_name: string;
@@ -170,5 +174,41 @@ export interface ContentEvent {
   from_status: string | null;
   to_status: string | null;
   body: string | null;
+  created_at: string;
+}
+
+export interface ContentRequest {
+  id: string;
+  requested_by: string;
+  title: string;
+  description: string;
+  request_type: string;
+  machine_id: string | null;
+  desired_by: string | null;
+  priority: import("@/lib/marketing-config").ContentPriority;
+  status: import("@/lib/marketing-config").RequestStatus;
+  decision_note: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  content_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequestFile {
+  id: string;
+  request_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+export interface RequestComment {
+  id: string;
+  request_id: string;
+  author_id: string;
+  body: string;
   created_at: string;
 }

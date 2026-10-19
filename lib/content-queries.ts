@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { CONTENT_BUCKET, type ContentStatus } from "@/lib/marketing-config";
+import { CONTENT_BUCKET, sortByPriority, type ContentStatus } from "@/lib/marketing-config";
 import type { ContentEvent, ContentFile, ContentItem } from "@/types/database";
 
 export interface StaffUser {
@@ -26,7 +26,8 @@ export async function listContent(opts?: { status?: ContentStatus[]; from?: stri
   const { data } = await q
     .order("scheduled_for", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
-  return (data ?? []) as ContentItem[];
+  // urgente primeiro, depois por data (a ordem do banco)
+  return sortByPriority((data ?? []) as ContentItem[]);
 }
 
 export async function listContentFiles(contentIds: string[]) {
@@ -75,8 +76,8 @@ export function latestFiles(files: ContentFile[]) {
 }
 
 /** URL assinada gerada no servidor com a sessão do usuário (o RLS do Storage vale). */
-export async function signedContentUrl(path: string, seconds: number) {
-  const { data } = await createClient().storage.from(CONTENT_BUCKET).createSignedUrl(path, seconds);
+export async function signedContentUrl(path: string, seconds: number, bucket: string = CONTENT_BUCKET) {
+  const { data } = await createClient().storage.from(bucket).createSignedUrl(path, seconds);
   return data?.signedUrl ?? null;
 }
 

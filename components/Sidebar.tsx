@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
+  Inbox,
   Megaphone,
+  PackagePlus,
   Cpu,
   LayoutDashboard,
   ListChecks,
@@ -35,6 +37,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },
     { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
     { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
+    { href: "/admin/conteudo/solicitacoes", label: "Solicitações", icon: Inbox },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
   ],
   marketing: [
@@ -48,6 +51,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/vendedor/tarefas", label: "Minhas Tarefas", icon: ListChecks },
     { href: "/vendedor/catalogo", label: "Catálogo", icon: Cpu },
     { href: "/vendedor/manuais", label: "Manuais", icon: BookOpen },
+    { href: "/vendedor/solicitacoes", label: "Solicitar material", icon: PackagePlus },
   ],
 };
 
@@ -66,7 +70,10 @@ export function Sidebar({ role, name, badges = {} }: { role: Role; name: string;
 
       <nav className="flex-1 space-y-1 p-3">
         {NAV[role].map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
+          const best = NAV[role]
+            .filter((n) => pathname === n.href || pathname.startsWith(n.href + "/"))
+            .sort((a, b) => b.href.length - a.href.length)[0];
+          const active = best?.href === href;
           return (
             <Link
               key={href}

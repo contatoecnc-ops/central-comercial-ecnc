@@ -10,7 +10,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { ContentFilesPicker, uploadPending, type PendingItem } from "@/components/ContentFilesPicker";
 import { addContentFiles, createContent, updateContent } from "@/app/actions/content";
 import { contentSchema, type ContentInput } from "@/lib/schemas";
-import { CHANNELS, FORMATS } from "@/lib/marketing-config";
+import { CHANNELS, FORMATS, PRIORITIES, PRIORITY_LABEL } from "@/lib/marketing-config";
 import { removeContentObjects } from "@/lib/upload-content-file";
 
 interface Option {
@@ -57,6 +57,7 @@ export function ContentForm({
       format: "",
       machine_id: "",
       campaign: "",
+      priority: "media",
       scheduled_for: "",
       assigned_to: "",
       ...defaults,
@@ -152,6 +153,15 @@ export function ContentForm({
       <Field label="Campanha">
         <Input disabled={disabled} {...register("campaign")} />
       </Field>
+      <Field label="Prioridade" hint={contentId ? "Pode ser alterada em qualquer status (campo ao lado do status)" : undefined}>
+        <Select disabled={saving} {...register("priority")}>
+          {PRIORITIES.map((p) => (
+            <option key={p} value={p}>
+              {PRIORITY_LABEL[p]}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <Field label="Responsável">
         <Select disabled={disabled} {...register("assigned_to")}>
           <option value="">—</option>
@@ -192,7 +202,7 @@ export function ContentForm({
 }
 
 /** Nova versão de arquivos num conteúdo existente (ideia, produção ou ajustes). */
-export function AddVersionPanel({ contentId }: { contentId: string }) {
+export function AddVersionPanel({ contentId, fromRequest = false }: { contentId: string; fromRequest?: boolean }) {
   const router = useRouter();
   const [items, setItems] = useState<PendingItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -225,7 +235,7 @@ export function AddVersionPanel({ contentId }: { contentId: string }) {
 
   return (
     <div className="space-y-3">
-      <ContentFilesPicker items={items} setItems={setItems} disabled={busy} />
+      <ContentFilesPicker items={items} setItems={setItems} disabled={busy} warnFinal={fromRequest} />
       <div className="flex justify-end">
         <Button type="button" onClick={send} disabled={busy || items.length === 0}>
           {busy ? "Enviando..." : "Enviar como nova versão"}

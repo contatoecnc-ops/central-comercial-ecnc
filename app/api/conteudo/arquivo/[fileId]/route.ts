@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
 
   const { data: file } = await supabase
     .from("content_files")
-    .select("storage_path, external_url, file_name, mime_type")
+    .select("bucket, storage_path, external_url, file_name, mime_type")
     .eq("id", params.fileId)
     .maybeSingle();
   if (!file) return deny(404, "Arquivo não encontrado");
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
   if (file.storage_path) {
     const download = request.nextUrl.searchParams.get("download") === "1";
     const { data, error } = await supabase.storage
-      .from(CONTENT_BUCKET)
+      .from(file.bucket === "solicitacoes" ? "solicitacoes" : CONTENT_BUCKET)
       .createSignedUrl(file.storage_path, isVideoMime(file.mime_type) ? 3600 : 60, download ? { download: file.file_name } : undefined);
     if (error || !data?.signedUrl) return deny(404, "Arquivo não encontrado");
     target = data.signedUrl;

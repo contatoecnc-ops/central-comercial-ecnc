@@ -90,12 +90,15 @@ export function ContentFilesPicker({
   disabled,
   defaultKind = "arte",
   maxItems = 10,
+  warnFinal = false,
 }: {
   items: PendingItem[];
   setItems: Setter;
   disabled?: boolean;
   defaultKind?: FileKindContent;
   maxItems?: number;
+  /** conteúdo veio de solicitação: avisa que o tipo Final é entregue ao vendedor */
+  warnFinal?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -199,6 +202,15 @@ export function ContentFilesPicker({
           <Link2 size={14} /> Adicionar link
         </Button>
       </div>
+
+      {warnFinal && items.some((i) => i.kind === "final") && (
+        <p className="rounded-md border border-brand/50 bg-brand/10 p-2 text-xs">
+          Esta arte será entregue ao vendedor que fez a solicitação (assim que o conteúdo for aprovado).
+        </p>
+      )}
+      {warnFinal && (
+        <p className="text-xs text-muted">Marque como “Final” só o material pronto para o vendedor receber.</p>
+      )}
 
       {items.length > 0 && (
         <ul className="space-y-2">

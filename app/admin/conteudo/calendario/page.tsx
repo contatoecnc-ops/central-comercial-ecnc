@@ -17,7 +17,7 @@ import { ChannelChips, ContentNav } from "@/components/ContentBits";
 import { requireProfile } from "@/lib/auth";
 import { countPendingApproval, listContent } from "@/lib/content-queries";
 import { TZ } from "@/lib/dates";
-import { STATUS_COLOR } from "@/lib/marketing-config";
+import { PRIORITIES, PRIORITY_DOT, PRIORITY_LABEL, STATUS_COLOR } from "@/lib/marketing-config";
 import { cn } from "@/lib/utils";
 
 const KEY = "yyyy-MM-dd";
@@ -27,7 +27,7 @@ const parse = (s: string) => {
 };
 const utcStart = (d: Date) => fromZonedTime(`${format(d, KEY)}T00:00:00`, TZ).toISOString();
 
-export default async function CalendarioPage({ searchParams }: { searchParams: { data?: string; vista?: string } }) {
+export default async function CalendarioPage({ searchParams }: { searchParams: { data?: string; vista?: string; prioridade?: string } }) {
   const me = await requireProfile(["admin", "marketing"]);
   const todayKey = formatInTimeZone(new Date(), TZ, KEY);
   const week = searchParams.vista === "semana";
@@ -43,13 +43,15 @@ export default async function CalendarioPage({ searchParams }: { searchParams: {
   ]);
   const byDay = new Map<string, typeof items>();
   for (const i of items) {
+    if (searchParams.prioridade && i.priority !== searchParams.prioridade) continue;
     const key = formatInTimeZone(i.scheduled_for!, TZ, KEY);
     byDay.set(key, [...(byDay.get(key) ?? []), i]);
   }
 
   const prev = week ? addWeeks(ref, -1) : addMonths(ref, -1);
   const next = week ? addWeeks(ref, 1) : addMonths(ref, 1);
-  const href = (d: Date, vista = week ? "semana" : "mes") => `/admin/conteudo/calendario?vista=${vista}&data=${format(d, KEY)}`;
+  const filtro = searchParams.prioridade ? `&prioridade=${searchParams.prioridade}` : "";
+  const href = (d: Date, vista = week ? "semana" : "mes") => `/admin/conteudo/calendario?vista=${vista}&data=${format(d, KEY)}${filtro}`;
   const title = week
     ? `${format(first, "dd/MM", { locale: ptBR })} a ${format(last, "dd/MM/yyyy", { locale: ptBR })}`
     : format(ref, "MMMM 'de' yyyy", { locale: ptBR });
@@ -71,6 +73,18 @@ export default async function CalendarioPage({ searchParams }: { searchParams: {
           <Link href={href(parse(todayKey))} className="rounded-md border border-border px-3 py-2 text-xs hover:bg-white/5">
             Hoje
           </Link>
+        </div>
+        <div className="flex flex-wrap items-center gap-1 text-xs">
+          <span className="mr-1 text-muted">Prioridade:</span>
+          {[{ v: "", l: "Todas" }, ...PRIORITIES.map((p) => ({ v: p, l: PRIORITY_LABEL[p] }))].map((o) => (
+            <Link
+              key={o.v}
+              href={`/admin/conteudo/calendario?vista=${week ? "semana" : "mes"}&data=${format(ref, KEY)}${o.v ? `&prioridade=${o.v}` : ""}`}
+              className={cn("rounded-md border px-2 py-1.5", (searchParams.prioridade ?? "") === o.v ? "border-brand text-white" : "border-border text-muted")}
+            >
+              {o.l}
+            </Link>
+          ))}
         </div>
         <div className="flex gap-1 text-xs">
           <Link href={href(ref, "mes")} className={cn("rounded-md border px-3 py-1.5", !week ? "border-brand text-white" : "border-border text-muted")}>
@@ -104,6 +118,7 @@ export default async function CalendarioPage({ searchParams }: { searchParams: {
                       className={cn("block rounded border px-1.5 py-1 text-[11px] leading-tight hover:brightness-125", STATUS_COLOR[i.status])}
                     >
                       <span className="block truncate font-semibold">
+                        <span className={cn("mr-1 inline-block h-2 w-2 rounded-full align-middle", PRIORITY_DOT[i.priority])} title={PRIORITY_LABEL[i.priority]} />
                         {formatInTimeZone(i.scheduled_for!, TZ, "HH:mm")} {i.title}
                       </span>
                       <ChannelChips channels={i.channels} />

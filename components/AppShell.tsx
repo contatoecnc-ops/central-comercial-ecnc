@@ -1,11 +1,16 @@
 import { Sidebar } from "@/components/Sidebar";
 import { countPendingApproval } from "@/lib/content-queries";
+import { countNewRequests } from "@/lib/request-queries";
 import type { Profile } from "@/types/database";
 
 export async function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   // contador de aprovações pendentes na sidebar do admin
   const badges: Record<string, number> = {};
-  if (profile.role === "admin") badges["/admin/conteudo"] = await countPendingApproval();
+  if (profile.role === "admin") {
+    const [pending, novas] = await Promise.all([countPendingApproval(), countNewRequests()]);
+    badges["/admin/conteudo"] = pending;
+    badges["/admin/conteudo/solicitacoes"] = novas;
+  }
 
   return (
     <div className="min-h-screen">

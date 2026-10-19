@@ -5,12 +5,12 @@ import { ContentCard, ContentNav, StatusPill } from "@/components/ContentBits";
 import { requireProfile } from "@/lib/auth";
 import { countPendingApproval, latestFiles, listContent, listContentFiles, listStaff } from "@/lib/content-queries";
 import { listMachines } from "@/lib/queries";
-import { CHANNELS, STATUS_ORDER } from "@/lib/marketing-config";
+import { CHANNELS, PRIORITIES, PRIORITY_LABEL, STATUS_ORDER } from "@/lib/marketing-config";
 
 export default async function QuadroPage({
   searchParams,
 }: {
-  searchParams: { canal?: string; produto?: string; campanha?: string; resp?: string; arquivados?: string };
+  searchParams: { prioridade?: string; canal?: string; produto?: string; campanha?: string; resp?: string; arquivados?: string };
 }) {
   const me = await requireProfile(["admin", "marketing"]);
   const [all, machines, staff, pending] = await Promise.all([
@@ -23,6 +23,7 @@ export default async function QuadroPage({
   const campaigns = Array.from(new Set(all.map((i) => i.campaign).filter((c): c is string => !!c))).sort();
   const q = searchParams.campanha?.trim().toLowerCase();
   const items = all.filter((i) => {
+    if (searchParams.prioridade && i.priority !== searchParams.prioridade) return false;
     if (searchParams.canal && !i.channels.includes(searchParams.canal)) return false;
     if (searchParams.produto && i.machine_id !== searchParams.produto) return false;
     if (q && !(i.campaign ?? "").toLowerCase().includes(q)) return false;
@@ -42,6 +43,14 @@ export default async function QuadroPage({
       <ContentNav role={me.role} active="/admin/conteudo/quadro" pending={pending} />
 
       <form className="mb-6 flex flex-wrap items-end gap-2">
+        <Select name="prioridade" defaultValue={searchParams.prioridade ?? ""} className="w-40" aria-label="Prioridade">
+          <option value="">Toda prioridade</option>
+          {PRIORITIES.map((p) => (
+            <option key={p} value={p}>
+              {PRIORITY_LABEL[p]}
+            </option>
+          ))}
+        </Select>
         <Select name="canal" defaultValue={searchParams.canal ?? ""} className="w-44" aria-label="Canal">
           <option value="">Todos os canais</option>
           {CHANNELS.map((c) => (

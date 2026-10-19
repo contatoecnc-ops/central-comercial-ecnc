@@ -172,3 +172,6 @@ export function checkContentFile(f: { name: string; size: number }): { error: st
 
 export const isVideoMime = (m: string | null) => !!m && m.startsWith("video/");
 export const isImageMime = (m: string | null) => !!m && m.startsWith("image/");
+
+// Prioridade e solicitações de material
+export * from "@/lib/marketing-requests";

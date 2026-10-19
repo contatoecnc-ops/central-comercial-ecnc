@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@/components/ui/form";
-import { addContentComment, changeStatus, setSchedule } from "@/app/actions/content";
-import type { ContentStatus, Transition } from "@/lib/marketing-config";
+import { Input, Select, Textarea } from "@/components/ui/form";
+import { addContentComment, changeStatus, setPriority, setSchedule } from "@/app/actions/content";
+import { PRIORITIES, PRIORITY_LABEL, type ContentPriority, type ContentStatus, type Transition } from "@/lib/marketing-config";
 
 /**
  * Botões de mudança de status. `compact` (cartão do quadro) omite o que exige comentário.
@@ -119,5 +119,30 @@ export function ScheduleField({ contentId, initial }: { contentId: string; initi
       </Button>
       <span className="text-xs text-muted">Horário de Brasília</span>
     </div>
+  );
+}
+
+/** Prioridade: metadado que admin e marketing alteram em qualquer status. */
+export function PriorityField({ contentId, value }: { contentId: string; value: ContentPriority }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function change(next: string) {
+    setBusy(true);
+    const res = await setPriority(contentId, next);
+    setBusy(false);
+    if (res.error) return void toast.error(res.error);
+    toast.success("Prioridade atualizada");
+    router.refresh();
+  }
+
+  return (
+    <Select value={value} disabled={busy} onChange={(e) => change(e.target.value)} className="h-8 w-32 text-xs" aria-label="Prioridade">
+      {PRIORITIES.map((p) => (
+        <option key={p} value={p}>
+          {PRIORITY_LABEL[p]}
+        </option>
+      ))}
+    </Select>
   );
 }
