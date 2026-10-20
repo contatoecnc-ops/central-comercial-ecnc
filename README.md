@@ -53,6 +53,33 @@ Execute `supabase/migrations/003_fase2.sql` no SQL Editor (idempotente; pode rod
 > Se o arquivo no Drive for um `.xlsx` (e não uma planilha Google nativa), a leitura funciona via Drive API, mas **converter para Google Sheets** (Arquivo → Salvar como Planilhas Google) é mais simples e confiável.
 
 
+## Fase D — Análise (números agregados, somente leitura)
+
+Permite que um agente externo (Hermes, no Telegram) e o admin leiam **só números** da Central: nada de títulos, descrições, comentários, nomes de arquivo, clientes, e-mails ou telefones. Só contagens, somas, médias, percentuais, durações e nomes de vendedores/equipe.
+
+**Ativação**
+1. Execute `supabase/migrations/009_analise.sql` no SQL Editor (cria o schema `analytics` com as views; só a `service_role` lê).
+2. Supabase → *Project Settings → API → Exposed schemas* → adicione `analytics`. (Sem isso o PostgREST não enxerga as views. `anon` e `authenticated` continuam sem permissão alguma.)
+3. Defina `ANALYSIS_TOKEN` (mínimo 40 caracteres) na Vercel e faça redeploy. Gerar:
+   - `openssl rand -hex 32`
+   - PowerShell: `[Convert]::ToHexString((1..32 | ForEach-Object { Get-Random -Maximum 256 }))` (ou um gerador de senhas de 64 caracteres)
+   - **Não commitar** o token; ele só vai na Vercel e no agente.
+4. Rode os testes de `supabase/tests/009_analise_testes.sql` (um bloco por vez) e `scripts/test-analise.sh`.
+
+**Endpoint** `GET /api/analise/resumo`
+- Autenticação: `Authorization: Bearer <ANALYSIS_TOKEN>` **ou** sessão de admin (marketing e vendedor recebem 403). Token na query string não é aceito. Sem credencial válida: `401` genérico.
+- Parâmetros: `from` e `to` (`YYYY-MM-DD`, fuso America/Sao_Paulo, máximo 92 dias; padrão: semana anterior, segunda a domingo) e `formato=json` (padrão) ou `md`. Inválidos: `400`.
+- Resposta: `periodo`, `gerado_em`, `dados_de_vendas_ate`, `sincronizacao_vendas_ok`, e os blocos `tarefas`, `vendas`, `solicitacoes`, `conteudo` e `alertas` (textos fixos, só números e nomes de vendedor). `Cache-Control: no-store`.
+- Exemplo: `curl -H "Authorization: Bearer $ANALYSIS_TOKEN" "https://SEU-DOMINIO/api/analise/resumo?formato=md"`
+- Limite: 30 requisições por hora por IP, **em memória do processo**. Em ambiente serverless (Vercel) cada instância tem seu contador e ele zera a cada cold start, então é um freio por instância, não global. A defesa real é o token longo comparado em tempo constante.
+- O caminho de código usa o cliente de serviço **somente** para ler `analytics.*` (`lib/analysis/summary.ts`); o agente nunca recebe credencial do banco. Nada além de data e status é registrado em log.
+
+**Tela** `/admin/analise` (só admin): seletor de período, resumo e alertas na tela, *Copiar Markdown* e *Baixar JSON*. Usa a mesma função do endpoint.
+
+**Rotacionar o token**: gere um novo, troque `ANALYSIS_TOKEN` na Vercel (*Settings → Environment Variables*), faça redeploy e atualize o agente. O token antigo para de valer no redeploy. O token só abre este endpoint; não dá acesso ao banco, ao Storage nem a outras rotas.
+
+Observações das views: tarefas "próprias" vs "do gestor" vêm de `created_by = assigned_to`; solicitações canceladas usam `updated_at` como data do cancelamento; o tempo em aprovação conta intervalos já encerrados; as views `v_conteudo_canal_dia` contam um item em cada canal dele (não somar entre canais).
+
 ## Notas
 
 - Segurança em duas camadas: middleware/layouts por role + RLS no Postgres (vendedor só vê as próprias tarefas; nas atribuídas pelo gestor só muda status, nunca edita ou cancela).

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   BookOpen,
   Inbox,
   Megaphone,
@@ -38,6 +39,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
     { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
     { href: "/admin/conteudo/solicitacoes", label: "Solicitações", icon: Inbox },
+    { href: "/admin/analise", label: "Análise", icon: BarChart3 },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
   ],
   marketing: [

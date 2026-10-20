@@ -60,6 +60,7 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// /api/* fica fora do matcher: /api/analise/resumo faz a própria autenticação (Bearer ou sessão admin).
 export const config = {
   matcher: ["/login", "/admin/:path*", "/vendedor/:path*", "/marketing/:path*"],
 };
