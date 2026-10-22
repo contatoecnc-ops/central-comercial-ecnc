@@ -79,13 +79,14 @@ begin
   from information_schema.columns
   where table_schema = 'analytics'
     and lower(column_name) in ('title', 'description', 'body', 'caption', 'file_name', 'email', 'decision_note', 'brief',
-                               'message', 'campaign', 'source_label', 'storage_path', 'external_url', 'full_name', 'phone', 'telefone');
+                               'message', 'campaign', 'source_label', 'storage_path', 'external_url', 'full_name', 'phone', 'telefone',
+                               'nome', 'texto', 'resumo', 'cnpj_cpf');
   if achadas is not null then raise exception 'FALHA DE SEGURANÇA: colunas de texto livre em analytics: %', achadas; end if;
   raise exception 'OK: nenhuma coluna de texto livre nas views analytics';
 end $$;
 
 -- ═══ 5. colunas de texto das views: só nomes de equipe e valores de listas fixas (conferência manual) ═══
--- Deve listar apenas: vendedor, seller_label, origem, tipo, prioridade, canal, status, mes.
+-- Deve listar apenas: vendedor, seller_label, origem, tipo, prioridade, canal, status, mes, campanha (v_michele_dia, até 60 caracteres).
 select table_name, column_name
 from information_schema.columns
 where table_schema = 'analytics' and data_type in ('text', 'character varying')

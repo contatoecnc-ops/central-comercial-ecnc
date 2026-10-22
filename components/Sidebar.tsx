@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  Bot,
   Inbox,
   Megaphone,
   PackagePlus,
@@ -40,6 +41,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
     { href: "/admin/conteudo/solicitacoes", label: "Solicitações", icon: Inbox },
     { href: "/admin/analise", label: "Análise", icon: BarChart3 },
+    { href: "/admin/michele", label: "Michele IA", icon: Bot },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
   ],
   marketing: [

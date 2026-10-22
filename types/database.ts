@@ -212,3 +212,71 @@ export interface RequestComment {
   body: string;
   created_at: string;
 }
+
+// ── Michele IA (migração 010) ──
+export type MicheleStatus = "em_andamento" | "qualificado" | "recusou";
+export type MicheleStatusEfetivo = MicheleStatus | "abandonado";
+export type MicheleTemperatura = "lead-quente" | "lead-morno" | "lead-frio";
+export type MicheleOrigem = "whatsapp" | "instagram";
+
+export interface MicheleAtendimento {
+  id: string;
+  sessao_id: string;
+  telefone: string;
+  nome: string | null;
+  origem: MicheleOrigem | null;
+  campanha: string | null;
+  status: MicheleStatus;
+  score: number | null;
+  temperatura: MicheleTemperatura | null;
+  prioridade: boolean | null;
+  segmento: string | null;
+  budget: string | null;
+  cnpj_cpf: string | null;
+  momento_compra: string | null;
+  produto_provavel: string | null;
+  resumo: Record<string, unknown> | null;
+  kommo_lead_id: number | null;
+  iniciado_em: string;
+  ultima_mensagem_em: string | null;
+  encerrado_em: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Linha da view v_michele_atendimentos (sem resumo nem CPF/CNPJ), com contagens e status efetivo. */
+export interface MicheleAtendimentoLinha
+  extends Omit<MicheleAtendimento, "resumo" | "cnpj_cpf" | "created_at" | "updated_at"> {
+  ultima_atividade_em: string;
+  status_efetivo: MicheleStatusEfetivo;
+  msgs_lead: number;
+  msgs_total: number;
+}
+
+export interface MicheleMensagem {
+  id: string;
+  atendimento_id: string;
+  ordem: number;
+  papel: "lead" | "michele";
+  texto: string;
+  enviada_em: string;
+}
+
+/** Retorno de public.michele_relatorio(). */
+export interface MicheleRelatorio {
+  funil: {
+    iniciaram: number;
+    responderam: number;
+    chegaram_ao_fim: number;
+    aceitaram: number;
+    recusaram: number;
+    em_andamento: number;
+    abandonados: number;
+  };
+  abandono_por_etapa: { etapa: number; qtd: number }[];
+  por_campanha: { campanha: string; leads: number; qualificados: number; recusaram: number }[];
+  por_budget: { faixa: string; qtd: number }[];
+  por_temperatura: { temperatura: string; qtd: number }[];
+  hoje: number;
+  em_andamento_agora: number;
+}

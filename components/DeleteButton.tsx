@@ -10,10 +10,12 @@ export function DeleteButton({
   action,
   confirmText,
   redirectTo,
+  label,
 }: {
   action: () => Promise<{ error?: string }>;
   confirmText: string;
   redirectTo?: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -32,6 +34,7 @@ export function DeleteButton({
   return (
     <Button type="button" variant="danger" size="sm" disabled={busy} onClick={onClick} aria-label="Excluir">
       <Trash2 size={14} />
+      {label}
     </Button>
   );
 }

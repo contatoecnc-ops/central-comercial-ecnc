@@ -23,6 +23,7 @@ export const VIEWS = [
   "v_conteudo_canal_dia",
   "v_conteudo_status",
   "v_solicitacao_para_entrega",
+  "v_michele_dia",
 ] as const;
 type View = (typeof VIEWS)[number];
 
@@ -79,6 +80,8 @@ export interface Resumo {
   vendas: ReturnType<typeof blocoVendas>;
   solicitacoes: ReturnType<typeof blocoSolicitacoes>;
   conteudo: ReturnType<typeof blocoConteudo>;
+  /** null se a migração 010 ainda não foi aplicada: não derruba o resto do resumo */
+  michele: ReturnType<typeof blocoMichele> | null;
   alertas: string[];
 }
 
@@ -215,6 +218,51 @@ function blocoConteudo(dia: Row[], canal: Row[], status: Row[]) {
   };
 }
 
+// ── Michele IA: só agregados. Nunca nome, telefone, CPF/CNPJ, texto de mensagem nem resumo. ──
+const MICHELE_MAX_CAMPANHAS = 20;
+const MICHELE_MAX_CAMPANHA_LEN = 60;
+
+/** Campanha vira texto de uma linha (sem caracteres de controle), com até 60 caracteres. */
+const campanhaLimpa = (c: unknown) =>
+  String(c ?? "")
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .trim()
+    .slice(0, MICHELE_MAX_CAMPANHA_LEN) || "Sem campanha";
+
+function blocoMichele(rows: Row[]) {
+  const atendimentos = sum(rows, "atendimentos");
+  const qualificados = sum(rows, "qualificados");
+  const recusas = sum(rows, "recusas");
+  const porCampanha = new Map<string, { atendimentos: number; qualificados: number }>();
+  for (const r of rows) {
+    const c = campanhaLimpa(r.campanha);
+    const cur = porCampanha.get(c) ?? { atendimentos: 0, qualificados: 0 };
+    cur.atendimentos += num(r.atendimentos);
+    cur.qualificados += num(r.qualificados);
+    porCampanha.set(c, cur);
+  }
+  const ordenadas = Array.from(porCampanha.entries())
+    .map(([campanha, v]) => ({ campanha, ...v }))
+    .sort((a, b) => b.atendimentos - a.atendimentos || a.campanha.localeCompare(b.campanha, "pt-BR"));
+  const top = ordenadas.slice(0, MICHELE_MAX_CAMPANHAS);
+  const resto = ordenadas.slice(MICHELE_MAX_CAMPANHAS);
+  if (resto.length > 0) {
+    top.push({
+      campanha: "Outras",
+      atendimentos: resto.reduce((s, x) => s + x.atendimentos, 0),
+      qualificados: resto.reduce((s, x) => s + x.qualificados, 0),
+    });
+  }
+  return {
+    atendimentos,
+    qualificados,
+    recusas,
+    abandonados: sum(rows, "abandonados"),
+    taxa_conclusao: ratio(qualificados + recusas, atendimentos),
+    por_campanha: top,
+  };
+}
+
 // ── Alertas: modelos fixos, só números e nomes de vendedor ──
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
@@ -255,7 +303,7 @@ export async function buildResumo(from: string, to: string): Promise<Resumo> {
   const meses = [mes, prevMonthKey(mes)];
   const mesIni = from.slice(0, 7);
 
-  const [tarefas, vendas, sync, solic, cDia, cCanal, cStatus, entrega] = await Promise.all([
+  const [tarefas, vendas, sync, solic, cDia, cCanal, cStatus, entrega, michele] = await Promise.all([
     readView("v_tarefas_dia", (q) => q.gte("dia", from).lte("dia", to)),
     readView("v_vendas_mes", (q) => q.in("mes", meses)),
     readView("v_vendas_sync"),
@@ -264,6 +312,10 @@ export async function buildResumo(from: string, to: string): Promise<Resumo> {
     readView("v_conteudo_canal_dia", (q) => q.gte("dia", from).lte("dia", to)),
     readView("v_conteudo_status"),
     readView("v_solicitacao_para_entrega", (q) => q.gte("mes", mesIni).lte("mes", mes)),
+    readView("v_michele_dia", (q) => q.gte("dia", from).lte("dia", to)).catch((e: Error) => {
+      console.error("analise: bloco michele indisponível", e.message); // só o código do erro
+      return null;
+    }),
   ]);
 
   const s = sync[0];
@@ -280,6 +332,7 @@ export async function buildResumo(from: string, to: string): Promise<Resumo> {
     vendas: blocoVendas(vendas, mes, dadosAte, hoje),
     solicitacoes: blocoSolicitacoes(solic, fimDia, entrega),
     conteudo: blocoConteudo(cDia, cCanal, cStatus),
+    michele: michele ? blocoMichele(michele) : null,
   };
   const urgentes24 = sum(
     solic.filter((r) => r.dia === fimDia && r.prioridade === "urgente"),

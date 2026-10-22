@@ -197,6 +197,22 @@ export default async function AnalisePage({ searchParams }: { searchParams: { pe
               rows={resumo.conteudo.por_canal.map((x) => [x.canal, x.criados, x.publicados, x.aprovados, x.devolvidos_para_ajustes])}
             />
           </Section>
+
+          {resumo.michele && (
+            <Section title="Michele IA">
+              <Table
+                head={["Atendimentos", "Qualificados", "Recusas", "Abandonados", "Taxa de conclusão"]}
+                rows={[[
+                  resumo.michele.atendimentos, resumo.michele.qualificados, resumo.michele.recusas,
+                  resumo.michele.abandonados, pct(resumo.michele.taxa_conclusao),
+                ]]}
+              />
+              <Table
+                head={["Campanha", "Atendimentos", "Qualificados"]}
+                rows={resumo.michele.por_campanha.map((x) => [x.campanha, x.atendimentos, x.qualificados])}
+              />
+            </Section>
+          )}
         </>
       )}
     </>

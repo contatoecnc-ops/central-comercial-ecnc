@@ -60,5 +60,17 @@ export function resumoToMarkdown(r: Resumo): string {
   out.push(table(["Status", "Itens"], Object.entries(c.itens_por_status).map(([k, n]) => [STATUS_LABEL[k as ContentStatus] ?? k, n])));
   out.push(table(["Canal", "Criados", "Publicados", "Aprovados", "Ajustes"], c.por_canal.map((x) => [x.canal, x.criados, x.publicados, x.aprovados, x.devolvidos_para_ajustes])));
 
+  if (r.michele) {
+    const mi = r.michele;
+    out.push("## Michele IA");
+    out.push(
+      table(
+        ["Atendimentos", "Qualificados", "Recusas", "Abandonados", "Taxa de conclusão"],
+        [[mi.atendimentos, mi.qualificados, mi.recusas, mi.abandonados, pct(mi.taxa_conclusao)]]
+      )
+    );
+    out.push(table(["Campanha", "Atendimentos", "Qualificados"], mi.por_campanha.map((x) => [x.campanha, x.atendimentos, x.qualificados])));
+  }
+
   return out.join("\n");
 }
