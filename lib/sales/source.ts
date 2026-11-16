@@ -1,4 +1,4 @@
-import { getGoogleAccessToken } from "@/lib/google";
+import { getGoogleAccessToken, hasGooglePrivateKey } from "@/lib/google";
 import { COMPANY_LABEL, SHEETS } from "@/lib/sales-config";
 import { headerKey, type Cell, type Matrix } from "@/lib/sales/parse";
 import type { SalesMetrics, SalesRowOut, SellerInfo } from "@/lib/sales/workbook";
@@ -9,7 +9,7 @@ export function getSalesSource(): SalesSourceKind {
   const v = process.env.SALES_SOURCE?.trim().toLowerCase();
   if (v === "mock") return "mock";
   const hasCreds =
-    !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !!process.env.GOOGLE_PRIVATE_KEY && !!process.env.GOOGLE_SHEET_ID;
+    !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && hasGooglePrivateKey() && !!process.env.GOOGLE_SHEET_ID;
   if ((v === "sheets" || !v) && hasCreds) return "sheets";
   return "none";
 }
