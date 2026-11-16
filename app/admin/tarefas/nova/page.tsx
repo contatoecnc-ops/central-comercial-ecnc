@@ -9,7 +9,7 @@ export default async function NovaTarefaPage() {
   const vendedores = await listVendedores();
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/tarefas"
         title="Nova tarefa"
         breadcrumb={[{ label: "Tarefas", href: "/admin/tarefas" }, { label: "Nova" }]}
       />

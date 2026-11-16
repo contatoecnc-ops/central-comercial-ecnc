@@ -58,7 +58,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: {
 
   return (
     <>
-      <PageHeader title="Relatórios" breadcrumb={[{ label: "Admin" }, { label: "Michele IA", href: "/admin/michele" }, { label: "Relatórios" }]} />
+      <PageHeader back="/admin/michele" title="Relatórios" breadcrumb={[{ label: "Admin" }, { label: "Michele IA", href: "/admin/michele" }, { label: "Relatórios" }]} />
 
       <div className="mb-8 flex flex-wrap items-end gap-3">
         {PRESETS.map((p) => (

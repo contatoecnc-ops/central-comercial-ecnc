@@ -39,7 +39,7 @@ export default async function QuadroPage({
 
   return (
     <>
-      <PageHeader title="Quadro de conteúdo" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Quadro" }]} />
+      <PageHeader back="/admin/conteudo" title="Quadro de conteúdo" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Quadro" }]} />
       <ContentNav role={me.role} active="/admin/conteudo/quadro" pending={pending} />
 
       <form className="mb-6 flex flex-wrap items-end gap-2">

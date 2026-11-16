@@ -29,7 +29,7 @@ export default async function SolicitacaoDetalhePage({ params }: { params: { id:
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/vendedor/solicitacoes"
         title={request.title}
         breadcrumb={[{ label: "Solicitações", href: "/vendedor/solicitacoes" }, { label: "Detalhe" }]}
         actions={

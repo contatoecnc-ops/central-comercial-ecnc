@@ -32,7 +32,7 @@ export default async function ConversaPage({ params }: { params: { id: string } 
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/michele"
         title={a.nome || "Sem nome"}
         breadcrumb={[
           { label: "Admin" },

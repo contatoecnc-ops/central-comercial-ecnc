@@ -7,7 +7,7 @@ export default async function EditarMaquinaPage({ params }: { params: { id: stri
   const { machine, media } = await getMachine(params.id);
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/catalogo"
         title={`Editar ${machine.name}`}
         breadcrumb={[{ label: "Catálogo", href: "/admin/catalogo" }, { label: "Editar" }]}
       />

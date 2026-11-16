@@ -10,7 +10,7 @@ export default async function VendedorManualPage({ params }: { params: { id: str
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/vendedor/manuais"
         title={manual.title}
         breadcrumb={[{ label: "Manuais", href: "/vendedor/manuais" }, { label: manual.category }]}
       />

@@ -80,7 +80,7 @@ export default async function AnalisePage({ searchParams }: { searchParams: { pe
 
   return (
     <>
-      <PageHeader
+      <PageHeader back
         title="Análise"
         breadcrumb={[{ label: "Admin" }, { label: "Análise" }]}
         actions={

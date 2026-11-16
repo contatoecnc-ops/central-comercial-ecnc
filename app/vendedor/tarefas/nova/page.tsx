@@ -7,7 +7,7 @@ export default async function VendedorNovaTarefaPage() {
   await requireProfile("vendedor");
   return (
     <>
-      <PageHeader
+      <PageHeader back="/vendedor/tarefas"
         title="Nova tarefa"
         breadcrumb={[{ label: "Minhas tarefas", href: "/vendedor/tarefas" }, { label: "Nova" }]}
       />

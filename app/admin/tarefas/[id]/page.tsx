@@ -16,7 +16,7 @@ export default async function AdminTarefaDetalhe({ params }: { params: { id: str
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/tarefas"
         title={task.title}
         breadcrumb={[{ label: "Tarefas", href: "/admin/tarefas" }, { label: "Detalhe" }]}
       />

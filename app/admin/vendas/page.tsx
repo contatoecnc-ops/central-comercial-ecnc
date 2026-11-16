@@ -9,7 +9,10 @@ import { COMPANY_LABEL, formerSellerNames, nonSellerNames } from "@/lib/sales-co
 import { fmtBRL, fmtDateISO, fmtPct, fmtPeriod, fmtSyncedAt } from "@/lib/sales/format";
 import { canon } from "@/lib/sales/parse";
 import { getSalesSource } from "@/lib/sales/source";
-import { currentPeriodOf, pct } from "@/lib/sales/view";
+import { currentPeriodOf, pct, staleWarning } from "@/lib/sales/view";
+import { formatInTimeZone } from "date-fns-tz";
+import { SalesHighlight } from "@/components/SalesHighlight";
+import { TZ } from "@/lib/dates";
 
 interface Line {
   key: string;
@@ -37,8 +40,10 @@ export default async function AdminVendasPage({ searchParams }: { searchParams: 
   const former = new Set(formerSellerNames.map(canon));
   const house = new Set(nonSellerNames.map(canon));
 
-  const periods = Array.from(new Set(rows.map((r) => r.period))).sort().reverse();
-  const period = periods.includes(searchParams.mes ?? "") ? searchParams.mes! : currentPeriodOf(rows);
+  // abas: os 12 meses do ano em exibição (mês sem dados mostra R$ 0,00)
+  const requested = /^\d{4}-(0[1-9]|1[0-2])$/.test(searchParams.mes ?? "") ? searchParams.mes : undefined;
+  const period = requested ?? currentPeriodOf(rows) ?? formatInTimeZone(new Date(), TZ, "yyyy-MM");
+  const tabs = Array.from({ length: 12 }, (_, i) => `${period.slice(0, 4)}-${String(i + 1).padStart(2, "0")}`);
   const month = rows.filter((r) => r.period === period);
 
   const sellers: Line[] = [];
@@ -77,9 +82,16 @@ export default async function AdminVendasPage({ searchParams }: { searchParams: 
     pecas: [...sellers, ...extra].reduce((s, l) => s + l.pecas, 0),
   };
 
+  // mesmas linhas da tabela: vendedores vinculados, sem outras receitas / ex-vendedor / sem vínculo
+  const vendido = sellers.reduce((s, l) => s + l.vendas, 0);
+  const metaVendedores = sellers.some((l) => l.meta !== null) ? sellers.reduce((s, l) => s + (l.meta ?? 0), 0) : null;
+  const avisos = [staleWarning(status?.dados_ate), ...(status?.avisos ?? []).filter((a) => !a.startsWith("Planilha desatualizada"))].filter(
+    (a): a is string => !!a
+  );
+
   const sortHref = (k: string) => {
     const qs = new URLSearchParams({ sort: k, dir: sortKey === k && dir === 1 ? "desc" : "asc" });
-    if (period) qs.set("mes", period);
+    qs.set("mes", period);
     return `/admin/vendas?${qs}`;
   };
   const Th = ({ k, children, right }: { k: string; children: React.ReactNode; right?: boolean }) => (
@@ -126,6 +138,20 @@ export default async function AdminVendasPage({ searchParams }: { searchParams: 
         </div>
       )}
 
+      <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+        {tabs.map((p) => (
+          <Link
+            key={p}
+            href={`/admin/vendas?mes=${encodeURIComponent(p)}`}
+            className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${p === period ? "border-brand bg-brand text-white" : "border-border text-muted hover:text-white"}`}
+          >
+            {fmtPeriod(p)}
+          </Link>
+        ))}
+      </div>
+
+      <SalesHighlight period={period} vendido={vendido} meta={metaVendedores} totalEmpresa={total.vendas} />
+
       {status && (
         <Card className="mb-6 space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
@@ -143,12 +169,12 @@ export default async function AdminVendasPage({ searchParams }: { searchParams: 
               value={diff === null ? "—" : fmtBRL(diff)}
               tone={diff === null ? undefined : ok ? "ok" : "bad"}
             />
-            <Stat label="Soma dos vendedores" value={fmtBRL(status.total_vinculado)} />
+            <Stat label="Soma dos vendedores (ano)"value={fmtBRL(status.total_vinculado)} />
             <Stat label="Fora dos vendedores (outras receitas, ex-vendedor, sem vínculo)" value={fmtBRL(status.total_outros)} />
           </dl>
-          {status.avisos.length > 0 ? (
+          {avisos.length > 0 ? (
             <ul className="space-y-1.5 text-sm">
-              {status.avisos.map((a, i) => (
+              {avisos.map((a, i) => (
                 <li key={i} className={`flex gap-2 ${a.startsWith("CONFERÊNCIA") ? "font-semibold text-red-400" : "text-yellow-300"}`}>
                   <AlertTriangle size={14} className="mt-0.5 shrink-0" /> {a}
                 </li>
@@ -167,20 +193,6 @@ export default async function AdminVendasPage({ searchParams }: { searchParams: 
             ou ajuste as listas em lib/sales-config.ts.
           </p>
         </Card>
-      )}
-
-      {periods.length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {[...periods].sort().map((p) => (
-            <Link
-              key={p}
-              href={`/admin/vendas?mes=${encodeURIComponent(p)}`}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${p === period ? "border-brand bg-brand text-white" : "border-border text-muted hover:text-white"}`}
-            >
-              {fmtPeriod(p)}
-            </Link>
-          ))}
-        </div>
       )}
 
       {month.length === 0 ? (

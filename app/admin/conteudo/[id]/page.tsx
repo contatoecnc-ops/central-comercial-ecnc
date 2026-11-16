@@ -36,7 +36,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/conteudo"
         title={item.title}
         breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Detalhe" }]}
         actions={

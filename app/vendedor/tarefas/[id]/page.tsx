@@ -14,7 +14,7 @@ export default async function VendedorTarefaDetalhe({ params }: { params: { id: 
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/vendedor/tarefas"
         title={task.title}
         breadcrumb={[{ label: "Minhas tarefas", href: "/vendedor/tarefas" }, { label: "Detalhe" }]}
       />

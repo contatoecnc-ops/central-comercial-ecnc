@@ -46,7 +46,7 @@ export default async function ConversasPage({ searchParams }: { searchParams: SP
 
   return (
     <>
-      <PageHeader title="Conversas" breadcrumb={[{ label: "Admin" }, { label: "Michele IA", href: "/admin/michele" }, { label: "Conversas" }]} />
+      <PageHeader back="/admin/michele" title="Conversas" breadcrumb={[{ label: "Admin" }, { label: "Michele IA", href: "/admin/michele" }, { label: "Conversas" }]} />
 
       <form method="get" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-6">
         <Input name="q" defaultValue={searchParams.q} placeholder="Nome ou telefone" className="col-span-2" />

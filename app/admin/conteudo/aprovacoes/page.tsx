@@ -93,7 +93,7 @@ export default async function AprovacoesPage() {
 
   return (
     <>
-      <PageHeader title="Aprovações" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Aprovações" }]} />
+      <PageHeader back="/admin/conteudo" title="Aprovações" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Aprovações" }]} />
       <ContentNav role={me.role} active="/admin/conteudo/aprovacoes" pending={pending} />
 
       {items.length === 0 ? (

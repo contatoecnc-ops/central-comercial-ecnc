@@ -58,7 +58,7 @@ export default async function CalendarioPage({ searchParams }: { searchParams: {
 
   return (
     <>
-      <PageHeader title="Calendário de publicações" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Calendário" }]} />
+      <PageHeader back="/admin/conteudo" title="Calendário de publicações" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Calendário" }]} />
       <ContentNav role={me.role} active="/admin/conteudo/calendario" pending={pending} />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

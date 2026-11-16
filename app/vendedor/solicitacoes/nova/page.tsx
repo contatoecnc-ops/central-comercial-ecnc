@@ -9,7 +9,7 @@ export default async function NovaSolicitacaoPage() {
   const machines = await listMachines({ onlyActive: true });
   return (
     <>
-      <PageHeader
+      <PageHeader back="/vendedor/solicitacoes"
         title="Nova solicitação"
         breadcrumb={[{ label: "Solicitações", href: "/vendedor/solicitacoes" }, { label: "Nova" }]}
       />

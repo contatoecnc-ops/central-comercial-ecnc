@@ -18,7 +18,7 @@ export default async function LembretesPage({ params }: { params: { id: string }
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/usuarios"
         title={`Lembretes — ${seller.full_name}`}
         breadcrumb={[{ label: "Usuários", href: "/admin/usuarios" }, { label: "Lembretes" }]}
       />

@@ -22,7 +22,7 @@ export default async function MaquinaPage({ params }: { params: { id: string } }
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/vendedor/catalogo"
         title={machine.name}
         breadcrumb={[{ label: "Catálogo", href: "/vendedor/catalogo" }, { label: machine.name }]}
         actions={<span className="rounded-full bg-brand px-3 py-1 text-xs font-bold">{machine.category}</span>}

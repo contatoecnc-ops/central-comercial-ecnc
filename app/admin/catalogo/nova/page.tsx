@@ -5,7 +5,7 @@ import { MachineForm } from "@/components/MachineForm";
 export default function NovaMaquinaPage() {
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/catalogo"
         title="Nova máquina"
         breadcrumb={[{ label: "Catálogo", href: "/admin/catalogo" }, { label: "Nova" }]}
       />

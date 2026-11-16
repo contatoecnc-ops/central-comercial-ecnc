@@ -15,7 +15,7 @@ export default async function NovoConteudoPage() {
   ]);
   return (
     <>
-      <PageHeader title="Novo conteúdo" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Novo" }]} />
+      <PageHeader back="/admin/conteudo" title="Novo conteúdo" breadcrumb={[{ label: "Conteúdo", href: "/admin/conteudo" }, { label: "Novo" }]} />
       <ContentNav role={me.role} active="/admin/conteudo/novo" pending={pending} />
       <Card className="max-w-4xl p-6">
         <ContentForm

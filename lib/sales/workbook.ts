@@ -6,7 +6,6 @@ import {
   ORIGIN_ALIASES,
   RESUMO_HEADERS,
   SHEETS,
-  STALE_DAYS,
   VENDAS_HEADERS,
   formerSellerNames,
   nonSellerNames,
@@ -145,12 +144,7 @@ export function parseSalesWorkbook(
   } else {
     warnings.push(`Aba "${SHEETS.resumo}" não encontrada: conferência com o Resumo não realizada`);
   }
-  if (dadosAte) {
-    const days = (now.getTime() - Date.parse(`${dadosAte}T00:00:00Z`)) / 86400000;
-    if (days > STALE_DAYS) {
-      warnings.push(`Planilha desatualizada: "vendas atualizadas até" é ${dadosAte.split("-").reverse().join("/")}`);
-    }
-  }
+  // "Planilha desatualizada" é calculado na hora de exibir (dias úteis, fuso de São Paulo): ver staleWarning
   const year = dadosAte ? Number(dadosAte.slice(0, 4)) : now.getUTCFullYear();
 
   // ── Vendas: lê só as colunas necessárias e agrega ──

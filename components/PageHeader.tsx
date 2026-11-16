@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 
 export interface Crumb {
   label: string;
@@ -10,14 +11,18 @@ export function PageHeader({
   title,
   breadcrumb,
   actions,
+  back,
 }: {
   title: string;
   breadcrumb?: Crumb[];
   actions?: React.ReactNode;
+  /** string = destino fixo; true = histórico (ou início do perfil). Omitido = sem botão. */
+  back?: string | boolean;
 }) {
   return (
     <header className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
       <div className="min-w-0">
+        {back && <BackButton href={typeof back === "string" ? back : undefined} />}
         {breadcrumb && breadcrumb.length > 0 && (
           <nav className="mb-2 flex flex-wrap items-center gap-1 text-xs text-muted">
             {breadcrumb.map((c, i) => (

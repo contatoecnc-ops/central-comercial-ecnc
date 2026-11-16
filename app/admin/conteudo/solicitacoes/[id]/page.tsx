@@ -30,7 +30,7 @@ export default async function SolicitacaoAdminPage({ params }: { params: { id: s
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/conteudo/solicitacoes"
         title={request.title}
         breadcrumb={[{ label: "Solicitações", href: "/admin/conteudo/solicitacoes" }, { label: "Detalhe" }]}
         actions={

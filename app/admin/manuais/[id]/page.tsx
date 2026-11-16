@@ -10,7 +10,7 @@ export default async function AdminManualPage({ params }: { params: { id: string
 
   return (
     <>
-      <PageHeader
+      <PageHeader back="/admin/manuais"
         title={manual.title}
         breadcrumb={[{ label: "Manuais", href: "/admin/manuais" }, { label: manual.category }]}
       />
