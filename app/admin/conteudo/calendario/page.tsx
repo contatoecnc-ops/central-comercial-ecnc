@@ -28,7 +28,7 @@ const parse = (s: string) => {
 const utcStart = (d: Date) => fromZonedTime(`${format(d, KEY)}T00:00:00`, TZ).toISOString();
 
 export default async function CalendarioPage({ searchParams }: { searchParams: { data?: string; vista?: string; prioridade?: string } }) {
-  const me = await requireProfile(["admin", "marketing"]);
+  const me = await requireProfile(["admin", "marketing", "analista"]);
   const todayKey = formatInTimeZone(new Date(), TZ, KEY);
   const week = searchParams.vista === "semana";
   const ref = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.data ?? "") ? parse(searchParams.data!) : parse(todayKey);

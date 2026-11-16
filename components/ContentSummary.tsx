@@ -33,7 +33,7 @@ function ItemList({ items, empty }: { items: ContentItem[]; empty: string }) {
 
 /** Resumo da central de conteúdo: contagens, aprovações, ajustes, próximos 7 dias e atrasadas. */
 export async function ContentSummary({ role }: { role: Role }) {
-  const [counts, items, novas] = await Promise.all([countByStatus(), listContent(), role === "admin" ? countNewRequests() : 0]);
+  const [counts, items, novas] = await Promise.all([countByStatus(), listContent(), role === "admin" || role === "analista" ? countNewRequests() : 0]);
   const now = Date.now();
   const week = now + 7 * 24 * 3600 * 1000;
   const open = items.filter((i) => i.status !== "publicado" && i.status !== "arquivado");
@@ -60,7 +60,7 @@ export async function ContentSummary({ role }: { role: Role }) {
           </Card>
         ))}
       </div>
-      {role === "admin" && (
+      {(role === "admin" || role === "analista") && (
         <Link href="/admin/conteudo/solicitacoes" className="block">
           <Card className={novas > 0 ? "border-brand/60 p-4" : "p-4"}>
             <p className="text-2xl font-bold">{novas}</p>

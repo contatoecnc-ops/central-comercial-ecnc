@@ -12,7 +12,7 @@ export default async function QuadroPage({
 }: {
   searchParams: { prioridade?: string; canal?: string; produto?: string; campanha?: string; resp?: string; arquivados?: string };
 }) {
-  const me = await requireProfile(["admin", "marketing"]);
+  const me = await requireProfile(["admin", "marketing", "analista"]);
   const [all, machines, staff, pending] = await Promise.all([
     listContent(),
     listMachines(),

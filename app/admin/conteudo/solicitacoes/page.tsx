@@ -39,7 +39,7 @@ function Row({ r, seller, waiting }: { r: ContentRequest; seller?: string; waiti
 }
 
 export default async function SolicitacoesInboxPage({ searchParams }: { searchParams: { vendedor?: string } }) {
-  const me = await requireProfile("admin");
+  const me = await requireProfile(["admin", "analista"]);
   const [all, pendingApprovals] = await Promise.all([listRequests(), countPendingApproval()]);
   const names = await profileNames(all.map((r) => r.requested_by));
 

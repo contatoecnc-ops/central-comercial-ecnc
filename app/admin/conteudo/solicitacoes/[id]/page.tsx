@@ -14,7 +14,8 @@ import { listMachines } from "@/lib/queries";
 const STATUS_LABEL: Record<string, string> = { nova: "Aguardando triagem", aprovada: "Aprovada", recusada: "Recusada", cancelada: "Cancelada" };
 
 export default async function SolicitacaoAdminPage({ params }: { params: { id: string } }) {
-  const me = await requireProfile("admin");
+  const me = await requireProfile(["admin", "analista"]);
+  const ro = me.role === "analista"; // somente leitura: sem decisão nem comentário
   const data = await getRequest(params.id);
   if (!data) notFound();
   const { request, files, comments } = data;
@@ -77,7 +78,7 @@ export default async function SolicitacaoAdminPage({ params }: { params: { id: s
 
           <Card className="space-y-3 p-5">
             <h2 className="text-sm font-bold uppercase tracking-wide">Decisão</h2>
-            {request.status === "nova" ? (
+            {request.status === "nova" && !ro ? (
               <DecisionPanel
                 requestId={request.id}
                 defaults={{ title: request.title, description: request.description, priority: request.priority }}
@@ -104,7 +105,7 @@ export default async function SolicitacaoAdminPage({ params }: { params: { id: s
         <Card className="h-fit space-y-4 p-5">
           <h2 className="text-sm font-bold uppercase tracking-wide">Conversa com o vendedor</h2>
           <RequestCommentList comments={comments} names={names} me={me.id} />
-          <RequestCommentForm requestId={request.id} />
+          {!ro && <RequestCommentForm requestId={request.id} />}
         </Card>
       </div>
     </>

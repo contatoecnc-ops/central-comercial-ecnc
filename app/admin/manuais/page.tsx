@@ -6,8 +6,9 @@ import { requireProfile } from "@/lib/auth";
 import { listManualFiles, listManuals } from "@/lib/queries";
 
 export default async function AdminManuaisPage() {
-  const me = await requireProfile(["admin", "marketing"]);
+  const me = await requireProfile(["admin", "marketing", "analista"]);
   const isAdmin = me.role === "admin";
+  const ro = me.role === "analista"; // somente leitura: sem novo manual, editar nem excluir
   const [manuals, allFiles] = await Promise.all([listManuals(), listManualFiles()]);
   const categories = Array.from(new Set(manuals.map((m) => m.category))).sort();
 
@@ -15,10 +16,12 @@ export default async function AdminManuaisPage() {
     <>
       <PageHeader title="Manuais de vendas" breadcrumb={[{ label: "Admin" }, { label: "Manuais" }]} />
 
-      <Card className="mb-8 p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide">Novo manual</h2>
-        <ManualForm categories={categories} canTablePrice={isAdmin} />
-      </Card>
+      {!ro && (
+        <Card className="mb-8 p-5">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide">Novo manual</h2>
+          <ManualForm categories={categories} canTablePrice={isAdmin} />
+        </Card>
+      )}
 
       {manuals.length === 0 ? (
         <EmptyState>Nenhum manual cadastrado.</EmptyState>
@@ -30,7 +33,7 @@ export default async function AdminManuaisPage() {
               manual={m}
               files={allFiles.filter((f) => f.manual_id === m.id)}
               categories={categories}
-              readOnly={!isAdmin && m.kind === "tabela_preco"}
+              readOnly={ro || (!isAdmin && m.kind === "tabela_preco")}
             />
           ))}
         </Card>

@@ -58,7 +58,7 @@ function Table({ head, rows }: { head: string[]; rows: (string | number)[][] }) 
 }
 
 export default async function AnalisePage({ searchParams }: { searchParams: { periodo?: string; from?: string; to?: string } }) {
-  await requireProfile("admin");
+  await requireProfile(["admin", "analista"]);
 
   const preset = PRESETS.find((p) => p.key === searchParams.periodo);
   const period = preset

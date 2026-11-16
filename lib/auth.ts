@@ -10,11 +10,19 @@ export async function getProfile(): Promise<Profile | null> {
   return (data as Profile) ?? null;
 }
 
-/** Exige sessão ativa e, se informado, um dos papéis. Quem não tem o papel vai para o próprio dashboard. */
+/** Papel somente leitura: vê os dados de gestão e nunca escreve (a regra também está no banco, migração 011). */
+export const isReadOnlyRole = (role: Role) => role === "analista";
+
+/**
+ * Exige sessão ativa e, se informado, um dos papéis. Quem não tem o papel vai para o próprio dashboard.
+ * Sem `role`, vale qualquer papel que ESCREVE: o analista só entra quando for citado explicitamente
+ * (páginas de leitura), então toda action que chama requireProfile() sem argumento o bloqueia.
+ */
 export async function requireProfile(role?: Role | Role[]): Promise<Profile> {
   const profile = await getProfile();
   if (!profile || !profile.active) redirect("/login");
   const allowed = role === undefined ? null : Array.isArray(role) ? role : [role];
+  if (profile.role === "analista" && !allowed?.includes("analista")) redirect("/acesso-negado");
   if (allowed && !allowed.includes(profile.role)) redirect(`/${profile.role}/dashboard`);
   return profile;
 }

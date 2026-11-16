@@ -12,7 +12,7 @@ function deny(status: number, message: string) {
 
 /**
  * Redireciona para uma URL assinada (60 s; 1 h para vídeo, senão a reprodução é cortada).
- * Só admin e marketing ativos. Usa a sessão do usuário, então o RLS do Storage também vale.
+ * Só admin, marketing e analista (leitura) ativos. Usa a sessão do usuário, então o RLS do Storage também vale.
  */
 export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
   if (!UUID.test(params.fileId)) return deny(404, "Arquivo não encontrado");
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
   if (!user) return deny(401, "Sessão expirada");
 
   const { data: profile } = await supabase.from("profiles").select("role, active").eq("id", user.id).single();
-  if (!profile || !profile.active || (profile.role !== "admin" && profile.role !== "marketing")) {
+  if (!profile || !profile.active || (profile.role !== "admin" && profile.role !== "marketing" && profile.role !== "analista")) {
     return deny(403, "Acesso negado");
   }
 

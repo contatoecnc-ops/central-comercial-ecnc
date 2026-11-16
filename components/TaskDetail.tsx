@@ -17,12 +17,15 @@ export function TaskDetail({
   showAssignee,
   ownLabel,
   canCancel,
+  readOnly,
 }: {
   task: TaskWithAssignee;
   comments: TaskComment[];
   showAssignee?: boolean;
   ownLabel?: string;
   canCancel?: boolean;
+  /** analista: sem botões de ação nem campo de comentário */
+  readOnly?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -73,10 +76,10 @@ export function TaskDetail({
         </dl>
       </Card>
 
-      <TaskActions taskId={task.id} status={task.status} canCancel={canCancel} />
+      {!readOnly && <TaskActions taskId={task.id} status={task.status} canCancel={canCancel} />}
 
       <Card className="p-5">
-        <CommentThread taskId={task.id} comments={comments} />
+        <CommentThread taskId={task.id} comments={comments} canComment={!readOnly} />
       </Card>
     </div>
   );

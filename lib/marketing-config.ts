@@ -94,6 +94,7 @@ export interface Transition {
 
 /** Transições permitidas ao papel — espelha a máquina de estados do trigger (o banco é quem decide). */
 export function transitionsFor(role: Role, status: ContentStatus): Transition[] {
+  if (role === "analista") return []; // somente leitura
   const admin = role === "admin";
   const out: Transition[] = [];
   switch (status) {

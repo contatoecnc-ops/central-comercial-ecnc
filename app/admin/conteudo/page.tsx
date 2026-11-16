@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { countPendingApproval } from "@/lib/content-queries";
 
 export default async function ConteudoResumoPage() {
-  const me = await requireProfile(["admin", "marketing"]);
+  const me = await requireProfile(["admin", "marketing", "analista"]);
   const pending = me.role === "admin" ? await countPendingApproval() : 0;
   return (
     <>

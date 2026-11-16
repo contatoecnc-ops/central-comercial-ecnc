@@ -14,7 +14,8 @@ import { STATUS_LABEL, canAddFiles, isLocked, transitionsFor, type ContentStatus
 import { listMachines } from "@/lib/queries";
 
 export default async function ConteudoDetalhePage({ params }: { params: { id: string } }) {
-  const me = await requireProfile(["admin", "marketing"]);
+  const me = await requireProfile(["admin", "marketing", "analista"]);
+  const ro = me.role === "analista"; // somente leitura: sem campos editáveis nem botões de ação
   const data = await getContent(params.id);
   if (!data) notFound();
   const { item, files, events } = data;
@@ -80,7 +81,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
               <div>
                 <dt className="text-xs uppercase text-muted">Prioridade</dt>
                 <dd>
-                  <PriorityField contentId={item.id} value={item.priority} />
+                  {ro ? <PriorityTag priority={item.priority} /> : <PriorityField contentId={item.id} value={item.priority} />}
                 </dd>
               </div>
               <div>
@@ -103,7 +104,11 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
 
             <div className="space-y-1">
               <p className="text-xs uppercase text-muted">Publicação (horário de Brasília)</p>
-              <ScheduleField contentId={item.id} initial={item.scheduled_for ? toInputValue(item.scheduled_for) : ""} />
+              {ro ? (
+                <p className="text-sm">{item.scheduled_for ? fmtDateTime(item.scheduled_for) : "—"}</p>
+              ) : (
+                <ScheduleField contentId={item.id} initial={item.scheduled_for ? toInputValue(item.scheduled_for) : ""} />
+              )}
             </div>
 
             {item.caption && (
@@ -121,7 +126,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
           <Card className="space-y-4 p-5">
             <h2 className="text-sm font-bold uppercase tracking-wide">Arquivos</h2>
             <FileGallery files={files} isAdmin={me.role === "admin"} locked={locked} />
-            {canAddFiles(item.status) ? (
+            {ro ? null : canAddFiles(item.status) ? (
               <div className="space-y-2 border-t border-border pt-4">
                 <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Adicionar nova versão</h3>
                 <AddVersionPanel contentId={item.id} fromRequest={!!item.source_label} />
@@ -134,6 +139,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
             )}
           </Card>
 
+          {!ro && (
           <details className="rounded-lg border border-border bg-card">
             <summary className="cursor-pointer p-4 text-sm font-bold uppercase tracking-wide">Editar dados</summary>
             <div className="p-5 pt-0">
@@ -156,6 +162,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
               />
             </div>
           </details>
+          )}
         </div>
 
         <Card className="h-fit space-y-4 p-5">
@@ -178,7 +185,7 @@ export default async function ConteudoDetalhePage({ params }: { params: { id: st
               </li>
             ))}
           </ol>
-          <CommentForm contentId={item.id} />
+          {!ro && <CommentForm contentId={item.id} />}
         </Card>
       </div>
     </>

@@ -11,7 +11,7 @@ import { fmtBRL, fmtPct, fmtPeriod } from "@/lib/sales/format";
 import { currentPeriodOf, pct } from "@/lib/sales/view";
 
 export default async function AdminDashboard() {
-  await requireProfile("admin");
+  await requireProfile(["admin", "analista"]);
   const [allTasks, vendedores, sales] = await Promise.all([listTasks(), listVendedores(false), listSalesNumbers()]);
   // SLA só considera tarefas atribuídas pelo gestor; as próprias do vendedor entram em contador separado
   const tasks = allTasks.filter((t) => !isOwnTask(t));

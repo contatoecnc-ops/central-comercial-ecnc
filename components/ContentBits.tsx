@@ -75,6 +75,12 @@ const TABS: { href: string; label: string; adminOnly?: boolean; badge?: "pending
   { href: "/admin/conteudo/novo", label: "Novo conteúdo" },
 ];
 
+/** Analista (leitura): sem as telas de escrita (aprovações e novo conteúdo); vê as solicitações. */
+function tabVisible(t: { href: string; adminOnly?: boolean }, role: Role) {
+  if (role === "analista") return t.href !== "/admin/conteudo/aprovacoes" && t.href !== "/admin/conteudo/novo";
+  return !t.adminOnly || role === "admin";
+}
+
 export function ContentNav({
   role,
   active,
@@ -88,7 +94,7 @@ export function ContentNav({
 }) {
   return (
     <nav className="mb-6 flex flex-wrap gap-1 border-b border-border">
-      {TABS.filter((t) => !t.adminOnly || role === "admin").map((t) => (
+      {TABS.filter((t) => tabVisible(t, role)).map((t) => (
         <Link
           key={t.href}
           href={t.href}

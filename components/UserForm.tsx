@@ -48,6 +48,7 @@ export function UserForm() {
         <Select {...register("role")}>
           <option value="vendedor">Vendedor</option>
           <option value="marketing">Marketing</option>
+          <option value="analista">Analista (somente leitura)</option>
           <option value="admin">Admin</option>
         </Select>
       </Field>

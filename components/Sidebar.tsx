@@ -44,6 +44,16 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/michele", label: "Michele IA", icon: Bot },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
   ],
+  analista: [
+    { href: "/analista/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/tarefas", label: "Tarefas", icon: ListChecks },
+    { href: "/admin/vendas", label: "Vendas", icon: TrendingUp },
+    { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },
+    { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
+    { href: "/admin/conteudo/solicitacoes", label: "Solicitações", icon: Inbox },
+    { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
+    { href: "/admin/analise", label: "Análise", icon: BarChart3 },
+  ],
   marketing: [
     { href: "/marketing/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },

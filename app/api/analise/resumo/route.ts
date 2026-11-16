@@ -33,14 +33,15 @@ function validBearer(header: string, token: string) {
   return timingSafeEqual(a, b);
 }
 
-async function sessionRole(): Promise<"none" | "admin" | "other"> {
+async function sessionRole(): Promise<"none" | "ok" | "other"> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "none";
   const { data } = await supabase.from("profiles").select("role, active").eq("id", user.id).single();
-  return data?.role === "admin" && data.active === true ? "admin" : "other";
+  // admin e analista (somente leitura: esta rota só lê)
+  return (data?.role === "admin" || data?.role === "analista") && data.active === true ? "ok" : "other";
 }
 
 export async function GET(req: NextRequest) {
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
   const limit = rateLimit(ip);
   if (!limit.ok) return fail(429, "Limite de requisições excedido", { "Retry-After": String(limit.retryAfterSec) });
 
-  // Autenticação: Bearer (agente) OU sessão de admin (navegador). Token na query string não é aceito.
+  // Autenticação: Bearer (agente) OU sessão de admin ou analista (navegador). Token na query string não é aceito.
   const authorization = req.headers.get("authorization");
   if (authorization) {
     let token: string | null;

@@ -30,6 +30,17 @@ async function isAdminSession(req: NextRequest) {
   return data?.role === "admin" && data.active === true;
 }
 
+// analista é somente leitura: nem "Atualizar agora" (403 explícito, antes de qualquer leitura da planilha)
+async function isAnalistaSession() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase.from("profiles").select("role, active").eq("id", user.id).single();
+  return data?.role === "analista" && data.active === true;
+}
+
 async function run() {
   const source = getSalesSource();
   if (source === "none") {
@@ -49,6 +60,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!validBearer(req) && (await isAnalistaSession())) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  }
   if (!validBearer(req) && !(await isAdminSession(req))) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }

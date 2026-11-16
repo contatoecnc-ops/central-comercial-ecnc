@@ -1,6 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Telas de leitura do analista (reaproveitam as páginas do admin). Fora desta lista: acesso negado.
+// Rotas de escrita ficam de fora de propósito: nova, novo, editar e a fila de aprovações.
+const ANALISTA_READ = /^\/admin\/(tarefas|vendas|catalogo|manuais|conteudo|analise)(\/|$)/;
+const ANALISTA_WRITE =
+  /^\/admin\/(tarefas\/nova|catalogo\/nova|catalogo\/[^/]+\/editar|conteudo\/novo|conteudo\/aprovacoes)(\/|$)/;
+function analistaReadable(pathname: string) {
+  return pathname.startsWith("/analista/") || (ANALISTA_READ.test(pathname) && !ANALISTA_WRITE.test(pathname));
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -48,6 +57,19 @@ export async function middleware(request: NextRequest) {
 
   const home = `/${profile.role}/dashboard`;
   if (pathname === "/login") return redirectTo(home);
+
+  // Analista (somente leitura): só as telas de leitura; escrita, Michele e usuários caem em "acesso negado" (403).
+  if (profile.role === "analista") {
+    if (analistaReadable(pathname)) return response;
+    const url = request.nextUrl.clone();
+    url.pathname = "/acesso-negado";
+    url.search = "";
+    const res = NextResponse.rewrite(url, { status: 403 });
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  }
+  if (pathname.startsWith("/analista")) return redirectTo(home);
+
   // Marketing usa só o próprio painel e as telas compartilhadas de catálogo e manuais.
   const marketingShared =
     /^\/admin\/(catalogo|manuais|conteudo)(\/|$)/.test(pathname) && !/^\/admin\/conteudo\/solicitacoes(\/|$)/.test(pathname);
@@ -60,7 +82,7 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-// /api/* fica fora do matcher: /api/analise/resumo faz a própria autenticação (Bearer ou sessão admin).
+// /api/* fica fora do matcher: cada rota faz a própria autenticação (Bearer ou sessão e papel).
 export const config = {
-  matcher: ["/login", "/admin/:path*", "/vendedor/:path*", "/marketing/:path*"],
+  matcher: ["/login", "/admin/:path*", "/vendedor/:path*", "/marketing/:path*", "/analista/:path*"],
 };

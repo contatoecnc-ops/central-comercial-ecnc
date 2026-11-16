@@ -11,7 +11,7 @@ function deny(status: number, message: string) {
 }
 
 /**
- * Anexo de uma solicitação: só o vendedor dono e o admin (perfil ativo). URL assinada de 60 s,
+ * Anexo de uma solicitação: o vendedor dono, o admin e o analista (leitura) (perfil ativo). URL assinada de 60 s,
  * gerada com a sessão do usuário, então o RLS de request_files e do Storage também valem.
  */
 export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
   if (!user) return deny(401, "Sessão expirada");
 
   const { data: profile } = await supabase.from("profiles").select("role, active").eq("id", user.id).single();
-  if (!profile || !profile.active || (profile.role !== "admin" && profile.role !== "vendedor")) {
+  if (!profile || !profile.active || (profile.role !== "admin" && profile.role !== "vendedor" && profile.role !== "analista")) {
     return deny(403, "Acesso negado");
   }
 

@@ -83,7 +83,7 @@ export const userSchema = z.object({
   full_name: z.string().trim().min(1, "Informe o nome"),
   email: z.string().trim().email("Email inválido"),
   password: z.string().min(8, "Mínimo de 8 caracteres"),
-  role: z.enum(["admin", "vendedor", "marketing"]),
+  role: z.enum(["admin", "vendedor", "marketing", "analista"]),
 });
 export type UserInput = z.infer<typeof userSchema>;
 

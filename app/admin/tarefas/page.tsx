@@ -18,7 +18,7 @@ export default async function AdminTarefasPage({
 }: {
   searchParams: { vendedor?: string; status?: string; sla?: string; origem?: string };
 }) {
-  await requireProfile("admin");
+  const me = await requireProfile(["admin", "analista"]);
   const [tasks, vendedores] = await Promise.all([
     listTasks({ assignedTo: searchParams.vendedor, status: searchParams.status }),
     listVendedores(false),
@@ -37,9 +37,11 @@ export default async function AdminTarefasPage({
         title="Tarefas"
         breadcrumb={[{ label: "Admin" }, { label: "Tarefas" }]}
         actions={
-          <ButtonLink href="/admin/tarefas/nova">
-            <Plus size={16} /> Nova tarefa
-          </ButtonLink>
+          me.role === "analista" ? undefined : (
+            <ButtonLink href="/admin/tarefas/nova">
+              <Plus size={16} /> Nova tarefa
+            </ButtonLink>
+          )
         }
       />
 

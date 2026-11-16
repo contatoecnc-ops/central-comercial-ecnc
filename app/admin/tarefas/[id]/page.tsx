@@ -8,7 +8,8 @@ import { getTaskWithComments, listVendedores } from "@/lib/queries";
 import { toInputValue } from "@/lib/dates";
 
 export default async function AdminTarefaDetalhe({ params }: { params: { id: string } }) {
-  await requireProfile("admin");
+  const me = await requireProfile(["admin", "analista"]);
+  const ro = me.role === "analista";
   const [{ task, comments }, vendedores] = await Promise.all([
     getTaskWithComments(params.id),
     listVendedores(false),
@@ -21,7 +22,8 @@ export default async function AdminTarefaDetalhe({ params }: { params: { id: str
         breadcrumb={[{ label: "Tarefas", href: "/admin/tarefas" }, { label: "Detalhe" }]}
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <TaskDetail task={task} comments={comments} showAssignee />
+        <TaskDetail task={task} comments={comments} showAssignee readOnly={ro} />
+        {!ro && (
         <details className="h-fit rounded-lg border border-border bg-card" open>
           <summary className="flex cursor-pointer items-center gap-2 p-4 text-sm font-bold uppercase tracking-wide">
             <Pencil size={14} className="text-brand" /> Editar tarefa
@@ -42,6 +44,7 @@ export default async function AdminTarefaDetalhe({ params }: { params: { id: str
             />
           </Card>
         </details>
+        )}
       </div>
     </>
   );

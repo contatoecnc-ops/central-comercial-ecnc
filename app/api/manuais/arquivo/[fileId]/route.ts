@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
     .maybeSingle();
   if (!file) return deny(404, "Arquivo não encontrado");
 
-  if (profile.role !== "admin" && profile.role !== "marketing") {
+  if (profile.role !== "admin" && profile.role !== "marketing" && profile.role !== "analista") {
     const { data: manual } = await supabase
       .from("manuals")
       .select("active")
