@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FileText, MessageSquarePlus, SendHorizonal } from "lucide-react";
+import { FileText, ListChecks, MessageSquarePlus, SendHorizonal } from "lucide-react";
+import { GuiaCampos, PainelGuia } from "@/components/contratos/GuiaCampos";
+import type { GrupoGuia } from "@/lib/contratos-campos";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,11 +21,15 @@ export function ChatContratos({
   inicial,
   rascunho,
   contratoGerado,
+  grupos,
+  roteiro,
 }: {
   conversaId: string;
   inicial: Msg[];
   rascunho?: string;
   contratoGerado: Gerado | null;
+  grupos: GrupoGuia[];
+  roteiro: string;
 }) {
   const router = useRouter();
   const [id, setId] = useState<string | undefined>(conversaId);
@@ -31,9 +37,12 @@ export function ChatContratos({
   const [gerado, setGerado] = useState<Gerado | null>(contratoGerado);
   const [texto, setTexto] = useState(rascunho ?? "");
   const [enviando, setEnviando] = useState(false);
+  const [guiaAberto, setGuiaAberto] = useState(false);
   const fim = useRef<HTMLDivElement>(null);
+  const fecharGuia = useCallback(() => setGuiaAberto(false), []);
 
   useEffect(() => {
+    if (msgs.length === 0) return; // estado vazio: o guia começa no topo
     fim.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [msgs, enviando, gerado]);
 
@@ -75,6 +84,7 @@ export function ChatContratos({
     if (msgs.length && !window.confirm("Encerrar esta conversa e começar outro contrato?")) return;
     const r = await fetch("/api/contratos/chat/novo", { method: "POST" });
     if (!r.ok) return void toast.error("Não foi possível iniciar outro contrato.");
+    setGuiaAberto(false);
     setMsgs([]);
     setGerado(null);
     setId(undefined);
@@ -85,17 +95,20 @@ export function ChatContratos({
     <div className="mx-auto flex h-[calc(100vh-14rem)] min-h-[420px] max-w-3xl flex-col rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <p className="text-sm font-semibold">Agente de Contratos</p>
-        <Button size="sm" variant="outline" onClick={novo} disabled={enviando}>
-          <MessageSquarePlus size={14} /> Novo contrato
-        </Button>
+        <div className="flex gap-2">
+          {msgs.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setGuiaAberto(true)} aria-haspopup="dialog">
+              <ListChecks size={14} /> Ver campos
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={novo} disabled={enviando}>
+            <MessageSquarePlus size={14} /> Novo contrato
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
-        {msgs.length === 0 && (
-          <p className="mx-auto max-w-md pt-10 text-center text-sm text-muted">
-            Me mande os dados da venda do jeito que tiver: cliente (PF ou PJ), máquina, valores e forma de pagamento. Eu confiro tudo e monto o contrato.
-          </p>
-        )}
+        {msgs.length === 0 && <GuiaCampos grupos={grupos} roteiro={roteiro} />}
         {msgs.map((m, i) => (
           <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
             <div
@@ -126,6 +139,7 @@ export function ChatContratos({
         <div ref={fim} />
       </div>
 
+      <PainelGuia aberto={guiaAberto} aoFechar={fecharGuia} grupos={grupos} roteiro={roteiro} />
       <form
         className="flex items-end gap-2 border-t border-border p-3"
         onSubmit={(e) => {

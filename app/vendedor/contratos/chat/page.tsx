@@ -1,6 +1,7 @@
 import { ChatContratos } from "@/components/contratos/ChatContratos";
 import { PageHeader } from "@/components/PageHeader";
 import { SupabaseConversas } from "@/lib/agente-contratos";
+import { montarGuia, montarRoteiro } from "@/lib/contratos-campos";
 import { carregarContrato } from "@/lib/contratos/queries";
 import { mensagemDeCorrecao, paraExibicao } from "@/lib/contratos/mensagens";
 import { exigirPaginaContratos, UUID_RE } from "@/lib/contratos/servidor";
@@ -27,6 +28,7 @@ export default async function ChatContratosPage({ searchParams }: { searchParams
     }
   }
 
+  const grupos = montarGuia();
   const gerado = conversa.contrato_id ? await carregarContrato(conversa.contrato_id) : null;
 
   return (
@@ -40,6 +42,8 @@ export default async function ChatContratosPage({ searchParams }: { searchParams
         conversaId={conversa.id}
         inicial={paraExibicao(conversa.mensagens)}
         rascunho={rascunho}
+        grupos={grupos}
+        roteiro={montarRoteiro(grupos)}
         contratoGerado={gerado ? { id: gerado.id, numero: gerado.numero } : null}
       />
     </>
