@@ -21,6 +21,7 @@ export function AcoesContrato({
   zapsignAtivo,
   temArquivo,
   docsPendentes,
+  bloqueioAprovar,
   compacto = false,
 }: {
   id: string;
@@ -29,6 +30,8 @@ export function AcoesContrato({
   zapsignAtivo: boolean;
   temArquivo: boolean;
   docsPendentes: string[];
+  /** Análise de crédito obrigatória e ausente/vencida/reprovada: desabilita Aprovar com este motivo. */
+  bloqueioAprovar?: string | null;
   compacto?: boolean;
 }) {
   const router = useRouter();
@@ -74,13 +77,13 @@ export function AcoesContrato({
   }
 
   if (status === "aguardando_aprovacao" && admin) {
-    const bloqueado = docsPendentes.length > 0;
+    const bloqueado = docsPendentes.length > 0 || !!bloqueioAprovar;
     botoes.unshift(
       <Button
         key="aprovar"
         size={size}
         disabled={busy || bloqueado}
-        title={bloqueado ? `Faltam documentos: ${docsPendentes.join("; ")}` : undefined}
+        title={bloqueioAprovar ?? (bloqueado ? `Faltam documentos: ${docsPendentes.join("; ")}` : undefined)}
         onClick={() => chamar("aprovar", undefined, "Contrato aprovado")}
       >
         <Check size={compacto ? 14 : 16} /> Aprovar

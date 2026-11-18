@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth";
+import { homeDoPapel } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function AcessoNegadoPage() {
   const profile = await getProfile();
-  const home = profile?.active ? `/${profile.role}/dashboard` : "/login";
+  const home = profile?.active ? homeDoPapel(profile.role) : "/login";
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="max-w-md text-center">

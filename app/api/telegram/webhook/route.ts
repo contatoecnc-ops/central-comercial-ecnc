@@ -3,7 +3,8 @@ import {
 } from "@/lib/agente-contratos";
 import { WEBHOOK_MAX_BYTES } from "@/lib/contratos-config";
 import { executarEmSegundoPlano } from "@/lib/contratos/background";
-import { avisarGestor, buscarVendedorPorTelegram, criarAgenteTelegram } from "@/lib/contratos/servidor";
+import { aposContratoGerado } from "@/lib/contratos/pos-geracao";
+import { buscarVendedorPorTelegram, criarAgenteTelegram } from "@/lib/contratos/servidor";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
       agente: criarAgenteTelegram(),
       conversas: new SupabaseConversas(createAdminClient()),
       buscarVendedor: buscarVendedorPorTelegram, // só vendedor ativo, liberado e cadastrado
-      aoGerarContrato: async ({ id }) => avisarGestor(id),
+      aoGerarContrato: async ({ id }) => aposContratoGerado(id),
     });
   });
   return new Response("ok");

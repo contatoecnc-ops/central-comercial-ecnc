@@ -11,6 +11,7 @@ import {
   Megaphone,
   PackagePlus,
   Cpu,
+  FileCheck2,
   FileSignature,
   LayoutDashboard,
   ListChecks,
@@ -56,6 +57,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
     { href: "/admin/analise", label: "Análise", icon: BarChart3 },
   ],
+  financeiro: [{ href: "/financeiro/analises", label: "Análises de crédito", icon: FileCheck2 }],
   marketing: [
     { href: "/marketing/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/catalogo", label: "Catálogo", icon: Cpu },

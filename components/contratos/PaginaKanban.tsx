@@ -7,7 +7,10 @@ import { Select } from "@/components/ui/form";
 import { zapsignAtivo } from "@/lib/agente-contratos";
 import { listarContratos, listarVendedoresContratos } from "@/lib/contratos/queries";
 import { UUID_RE } from "@/lib/contratos/servidor";
-import { MessageSquarePlus, Settings } from "lucide-react";
+import { FileCheck2, MessageSquarePlus, Settings } from "lucide-react";
+import { ANALISE_CREDITO_OBRIGATORIA } from "@/lib/contratos-config";
+import { contratoParcelado, motivoBloqueioAprovacao } from "@/lib/analise-credito/regras";
+import { selosDeContratos } from "@/lib/analise-credito/servidor";
 
 /** Kanban "Contratos": o mesmo quadro para o vendedor (só os dele, pelo RLS) e para o admin (todos, com filtro por vendedor). */
 export async function PaginaKanban({
@@ -23,6 +26,12 @@ export async function PaginaKanban({
     listarContratos({ vendedorId, cancelados }),
     papel === "admin" ? listarVendedoresContratos() : Promise.resolve([]),
   ]);
+  // Selo da análise de crédito (contratos parcelados). O vendedor recebe só o estado, sem validade nem PDF.
+  const selos = await selosDeContratos(contratos, { semValidade: papel === "vendedor" });
+  for (const c of contratos) {
+    c.analise = selos.get(c.id) ?? null;
+    c.bloqueioAprovar = papel === "admin" ? motivoBloqueioAprovacao(contratoParcelado(c.condicao_pagamento, { parcelas: c.parcelas }), c.analise, ANALISE_CREDITO_OBRIGATORIA) : null;
+  }
   const base = `/${papel}/contratos`;
   const q = new URLSearchParams();
   if (vendedorId) q.set("vendedor", vendedorId);
@@ -37,6 +46,11 @@ export async function PaginaKanban({
             {papel === "vendedor" && (
               <ButtonLink href="/vendedor/contratos/chat">
                 <MessageSquarePlus size={16} /> Novo contrato
+              </ButtonLink>
+            )}
+            {papel === "admin" && (
+              <ButtonLink href="/admin/contratos/analises" variant="outline">
+                <FileCheck2 size={16} /> Análises de crédito
               </ButtonLink>
             )}
             {papel === "admin" && (

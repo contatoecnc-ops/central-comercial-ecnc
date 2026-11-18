@@ -10,6 +10,8 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form";
 import { createClient } from "@/lib/supabase/client";
+import { homeDoPapel } from "@/lib/roles";
+import type { Role } from "@/types/database";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),
@@ -46,7 +48,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    router.replace(`/${profile.role}/dashboard`);
+    router.replace(homeDoPapel(profile.role as Role));
     router.refresh();
   }
 

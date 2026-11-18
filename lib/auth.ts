@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { homeDoPapel } from "@/lib/roles";
 import type { Profile, Role } from "@/types/database";
 
 export async function getProfile(): Promise<Profile | null> {
@@ -22,7 +23,8 @@ export async function requireProfile(role?: Role | Role[]): Promise<Profile> {
   const profile = await getProfile();
   if (!profile || !profile.active) redirect("/login");
   const allowed = role === undefined ? null : Array.isArray(role) ? role : [role];
-  if (profile.role === "analista" && !allowed?.includes("analista")) redirect("/acesso-negado");
-  if (allowed && !allowed.includes(profile.role)) redirect(`/${profile.role}/dashboard`);
+  // analista e financeiro só entram quando citados explicitamente (nunca em action/página "de qualquer papel que escreve")
+  if ((profile.role === "analista" || profile.role === "financeiro") && !allowed?.includes(profile.role)) redirect("/acesso-negado");
+  if (allowed && !allowed.includes(profile.role)) redirect(homeDoPapel(profile.role));
   return profile;
 }

@@ -32,3 +32,17 @@ export const COLUNAS_KANBAN = [
 export const NIVEL_ROTULO: Record<1 | 2 | 3, string> = { 1: "Padrão", 2: "Atenção", 3: "Atenção máxima" };
 
 export const sandboxZapsign = () => process.env.ZAPSIGN_AMBIENTE !== "producao";
+
+// ───────────────────────────────────────────────────────────────── Análise de crédito
+
+/**
+ * Com `false` (atual): contrato parcelado sem análise vinculada só mostra o aviso vermelho; Aprovar continua funcionando.
+ * Com `true`: a rota de aprovar (e o botão, desabilitado com o motivo) recusa contrato parcelado que não tenha uma análise
+ * APROVADA e DENTRO DA VALIDADE vinculada (vale a mais recente entre as vinculadas).
+ */
+export const ANALISE_CREDITO_OBRIGATORIA = false;
+
+/** Validade padrão, em dias a partir da data da análise, quando o financeiro não digita a data do PDF. */
+export const ANALISE_VALIDADE_PADRAO_DIAS = 60;
+export const ANALISE_ENVIOS_POR_HORA = 30;
+export const ANALISE_PDF_MAX_BYTES = 10 * 1024 * 1024;

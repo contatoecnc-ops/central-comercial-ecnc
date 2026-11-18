@@ -243,3 +243,17 @@ export async function avisarFimDeAssinatura(c: RegistroContrato, tipo: "assinado
     logErro(`aviso de ${tipo}`, c.id, e);
   }
 }
+
+/** Aviso de texto simples aos admins com Telegram (sem dados de cliente). Falha nunca quebra a ação. */
+export async function avisarAdminsTexto(texto: string, link?: { rotulo: string; caminho: string }) {
+  try {
+    const api = telegramApi();
+    if (!api) return;
+    const url = link ? urlCentral(link.caminho) : null;
+    for (const chat of await chatsAdmins()) {
+      await api.enviarTexto(chat, texto, link && url ? { rotulo: link.rotulo, url } : undefined).catch((e) => logErro("aviso aos admins", undefined, e));
+    }
+  } catch (e) {
+    logErro("aviso aos admins", undefined, e);
+  }
+}

@@ -2,9 +2,10 @@ import { z } from "zod";
 import { SupabaseConversas } from "@/lib/agente-contratos";
 import { CHAT_MAX_MENSAGEM } from "@/lib/contratos-config";
 import { executarEmSegundoPlano } from "@/lib/contratos/background";
+import { aposContratoGerado } from "@/lib/contratos/pos-geracao";
 import { erro, lerCorpoJson, resposta } from "@/lib/contratos/rota";
 import {
-  avisarGestor, contextoContratos, criarAgente, logErro, montarVendedor, registrarUsoAgente, UUID_RE,
+  contextoContratos, criarAgente, logErro, montarVendedor, registrarUsoAgente, UUID_RE,
 } from "@/lib/contratos/servidor";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
     await conversas.salvar(conversa);
     if (r.contrato_gerado) {
       const id = r.contrato_gerado.id;
-      executarEmSegundoPlano(() => avisarGestor(id)); // só envia se estiver aguardando aprovação
+      executarEmSegundoPlano(() => aposContratoGerado(id)); // liga a análise de crédito e avisa o gestor (se aguardando aprovação)
     }
     return resposta({ conversa_id: conversa.id, texto: r.texto, contrato_gerado: r.contrato_gerado ?? null });
   } catch (e) {

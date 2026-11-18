@@ -59,8 +59,24 @@ export async function middleware(request: NextRequest) {
     return pathname === "/login" ? response : redirectTo("/login");
   }
 
-  const home = `/${profile.role}/dashboard`;
+  const home = profile.role === "financeiro" ? "/financeiro/analises" : `/${profile.role}/dashboard`;
   if (pathname === "/login") return redirectTo(home);
+
+  const negar = () => {
+    const url = request.nextUrl.clone();
+    url.pathname = "/acesso-negado";
+    url.search = "";
+    const res = NextResponse.rewrite(url, { status: 403 });
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  };
+
+  // Financeiro: só /financeiro/*. Qualquer outra área (admin, vendedor, marketing, analista, contratos, Michele...) é "acesso negado".
+  // E /financeiro/* só abre para financeiro e admin.
+  const naAreaFinanceiro = pathname === "/financeiro" || pathname.startsWith("/financeiro/");
+  if (profile.role === "financeiro") return naAreaFinanceiro ? response : negar();
+  if (naAreaFinanceiro && profile.role !== "admin") return negar();
+  if (naAreaFinanceiro) return response;
 
   if (CONTRATOS.test(pathname)) {
     const permitido =
@@ -102,5 +118,5 @@ export async function middleware(request: NextRequest) {
 
 // /api/* fica fora do matcher: cada rota faz a própria autenticação (Bearer ou sessão e papel).
 export const config = {
-  matcher: ["/login", "/admin/:path*", "/vendedor/:path*", "/marketing/:path*", "/analista/:path*"],
+  matcher: ["/login", "/admin/:path*", "/vendedor/:path*", "/marketing/:path*", "/analista/:path*", "/financeiro/:path*"],
 };

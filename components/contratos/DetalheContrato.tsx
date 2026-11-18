@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { AlertTriangle, Info } from "lucide-react";
+import { BlocoAnalise } from "@/components/analises/BlocoAnalise";
+import { SeloAnaliseBadge } from "@/components/analises/Selo";
 import { AcoesContrato } from "@/components/contratos/AcoesContrato";
 import { NivelBadge, SeloSandbox, StatusContratoBadge } from "@/components/contratos/Bits";
 import { DocumentosChecklist } from "@/components/contratos/DocumentosChecklist";
@@ -9,13 +11,18 @@ import { Card } from "@/components/ui/card";
 import { zapsignAtivo } from "@/lib/agente-contratos";
 import { formatarCnpj, formatarCpf } from "@/lib/agente-contratos/lib/documentos";
 import { formatarMoeda } from "@/lib/agente-contratos/lib/formatacao";
-import { GESTOR_ASSINATURA } from "@/lib/contratos-config";
+import { ANALISE_CREDITO_OBRIGATORIA, GESTOR_ASSINATURA } from "@/lib/contratos-config";
+import { analisesDoContrato, type AnaliseDoContrato } from "@/lib/analise-credito/queries";
+import { contratoParcelado, motivoBloqueioAprovacao, type SeloAnalise } from "@/lib/analise-credito/regras";
+import { selosDeContratos } from "@/lib/analise-credito/servidor";
 import { carregarContrato, listarEventos, type ContratoCompleto, type EventoContrato } from "@/lib/contratos/queries";
 import { UUID_RE } from "@/lib/contratos/servidor";
 import { fmtDateTime } from "@/lib/dates";
 
 const ROTULO_EVENTO: Record<string, string> = {
   gerado: "Contrato gerado",
+  analise_vinculada: "Análise de crédito vinculada",
+  analise_desvinculada: "Análise de crédito desvinculada",
   regerado: "Contrato corrigido (volta para aprovação)",
   aprovado: "Aprovado",
   aprovacao_parcial: "Aprovação parcial",
@@ -61,7 +68,14 @@ export async function DetalheContrato({ id, papel, userId }: { id: string; papel
   const c = await carregarContrato(id); // client do usuário: o RLS já esconde contrato alheio
   if (!c || (papel === "vendedor" && c.vendedor_id !== userId)) notFound(); // 404 genérico
   const eventos = await listarEventos(c.id);
-  return <VisaoContrato c={c} eventos={eventos} papel={papel} zap={zapsignAtivo()} />;
+  const pagamento = (c.dados as { pagamento?: { parcelas?: number } } | undefined)?.pagamento;
+  const parcelado = contratoParcelado(c.condicao_pagamento, pagamento);
+  // O vendedor recebe só o estado do selo (sem validade) e nenhum dado nem evento da análise; o admin recebe o bloco completo.
+  const selo = (await selosDeContratos([{ id: c.id, condicao_pagamento: c.condicao_pagamento, parcelas: pagamento?.parcelas }], { semValidade: papel === "vendedor" })).get(c.id) ?? null;
+  const analises = papel === "admin" ? await analisesDoContrato(c.id) : [];
+  const bloqueioAprovar = papel === "admin" ? motivoBloqueioAprovacao(parcelado, selo, ANALISE_CREDITO_OBRIGATORIA) : null;
+  const visiveis = papel === "vendedor" ? eventos.filter((e) => !e.evento.startsWith("analise_")) : eventos;
+  return <VisaoContrato c={c} eventos={visiveis} papel={papel} zap={zapsignAtivo()} selo={selo} parcelado={parcelado} analises={analises} bloqueioAprovar={bloqueioAprovar} />;
 }
 
 /** Parte visual do detalhe (sem acesso a dados). */
@@ -70,11 +84,19 @@ export function VisaoContrato({
   eventos,
   papel,
   zap,
+  selo = null,
+  parcelado = false,
+  analises = [],
+  bloqueioAprovar = null,
 }: {
   c: ContratoCompleto;
   eventos: (EventoContrato & { quem: string })[];
   papel: "admin" | "vendedor";
   zap: boolean;
+  selo?: SeloAnalise | null;
+  parcelado?: boolean;
+  analises?: AnaliseDoContrato[];
+  bloqueioAprovar?: string | null;
 }) {
   const v = c.variaveis ?? {};
   const d = c.dados;
@@ -94,6 +116,7 @@ export function VisaoContrato({
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <StatusContratoBadge status={c.status} />
         <NivelBadge nivel={c.nivel_aprovacao} motivos={c.motivos_nivel} />
+        <SeloAnaliseBadge selo={selo} papel={papel} />
         <span className="text-sm text-muted">
           Vendedor: <span className="text-white">{c.vendedor_nome}</span> · Criado em {fmtDateTime(c.created_at)}
         </span>
@@ -147,11 +170,21 @@ export function VisaoContrato({
           zapsignAtivo={zap}
           temArquivo={!!c.arquivo_path}
           docsPendentes={docsPendentes}
+          bloqueioAprovar={bloqueioAprovar}
         />
+        {bloqueioAprovar && papel === "admin" && c.status === "aguardando_aprovacao" && (
+          <p className="mt-3 text-xs text-yellow-300">Aprovar está desabilitado: {bloqueioAprovar}</p>
+        )}
         {papel === "admin" && c.status === "aguardando_aprovacao" && docsPendentes.length > 0 && (
           <p className="mt-3 text-xs text-yellow-300">Aprovar está desabilitado: faltam documentos ({docsPendentes.join("; ")}).</p>
         )}
       </div>
+
+      {papel === "admin" && (parcelado || analises.length > 0) && (
+        <div className="mb-6">
+          <BlocoAnalise contratoId={c.id} analises={analises} parcelado={parcelado} />
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Bloco titulo="Cliente">

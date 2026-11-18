@@ -1,6 +1,6 @@
 import type { SalesMetrics } from "@/lib/sales/workbook";
 
-export type Role = "admin" | "vendedor" | "marketing" | "analista";
+export type Role = "admin" | "vendedor" | "marketing" | "analista" | "financeiro";
 export type Priority = "baixa" | "media" | "alta";
 export type TaskStatus = "pendente" | "em_andamento" | "concluida" | "cancelada";
 export type MachineCategory = "CO2" | "Fiber" | "UV" | "Solda Laser";

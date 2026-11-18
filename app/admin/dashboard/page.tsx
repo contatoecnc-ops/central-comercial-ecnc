@@ -5,6 +5,7 @@ import { StatTile } from "@/components/StatTile";
 import { TaskCard } from "@/components/TaskCard";
 import { Card, EmptyState } from "@/components/ui/card";
 import { countContratosAguardando } from "@/lib/contratos/queries";
+import { contadoresAnalise } from "@/lib/analise-credito/servidor";
 import { listSalesNumbers, listTasks, listVendedores } from "@/lib/queries";
 import { getSLA, isOpen, isOwnTask, sortTasks } from "@/lib/sla";
 import { COMPANY_LABEL } from "@/lib/sales-config";
@@ -15,6 +16,7 @@ export default async function AdminDashboard() {
   const me = await requireProfile(["admin", "analista"]);
   // Contratos são dados pessoais de clientes: o analista não vê nem a contagem.
   const contratosAguardando = me.role === "admin" ? await countContratosAguardando() : null;
+  const analises = me.role === "admin" ? await contadoresAnalise() : null;
   const [allTasks, vendedores, sales] = await Promise.all([listTasks(), listVendedores(false), listSalesNumbers()]);
   // SLA só considera tarefas atribuídas pelo gestor; as próprias do vendedor entram em contador separado
   const tasks = allTasks.filter((t) => !isOwnTask(t));
@@ -52,9 +54,21 @@ export default async function AdminDashboard() {
         <StatTile label="Concluídas" value={tasks.filter((t) => t.status === "concluida").length} tone="ok" />
       </div>
       {contratosAguardando !== null && (
-        <Link href="/admin/contratos" className="mt-4 block max-w-xs">
-          <StatTile label="Contratos aguardando aprovação" value={contratosAguardando} tone={contratosAguardando > 0 ? "warn" : "default"} />
-        </Link>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <Link href="/admin/contratos">
+            <StatTile label="Contratos aguardando aprovação" value={contratosAguardando} tone={contratosAguardando > 0 ? "warn" : "default"} />
+          </Link>
+          {analises && (
+            <>
+              <Link href="/admin/contratos/analises">
+                <StatTile label="Análises aguardando contrato" value={analises.aguardandoContrato} tone={analises.aguardandoContrato > 0 ? "warn" : "default"} />
+              </Link>
+              <Link href="/admin/contratos">
+                <StatTile label="Contratos parcelados sem análise" value={analises.parceladosSemAnalise} tone={analises.parceladosSemAnalise > 0 ? "danger" : "default"} />
+              </Link>
+            </>
+          )}
+        </div>
       )}
       <p className="mt-3 text-xs text-muted">
         Índices de SLA consideram só tarefas atribuídas pelo gestor. Tarefas próprias dos vendedores abertas:{" "}

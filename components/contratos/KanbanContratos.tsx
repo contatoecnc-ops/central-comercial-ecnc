@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, FileWarning } from "lucide-react";
 import { AcoesContrato } from "@/components/contratos/AcoesContrato";
+import { SeloAnaliseBadge } from "@/components/analises/Selo";
 import { NivelBadge } from "@/components/contratos/Bits";
 import { Card } from "@/components/ui/card";
 import { CONDICOES } from "@/lib/agente-contratos";
@@ -57,6 +58,8 @@ function Card1({ c, papel, zapsignAtivo }: { c: ContratoCard; papel: "admin" | "
         </div>
       </dl>
 
+      <SeloAnaliseBadge selo={c.analise} papel={papel} />
+
       {c.recusado && (
         <p className="flex items-center gap-1.5 rounded-md bg-brand/15 px-2 py-1 text-xs font-semibold text-red-300">
           <AlertTriangle size={14} /> Assinatura recusada no ZapSign
@@ -82,6 +85,7 @@ function Card1({ c, papel, zapsignAtivo }: { c: ContratoCard; papel: "admin" | "
         zapsignAtivo={zapsignAtivo}
         temArquivo
         docsPendentes={pendentes}
+        bloqueioAprovar={c.bloqueioAprovar}
       />
     </Card>
   );

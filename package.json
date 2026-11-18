@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:sales": "tsx scripts/test-workbook.ts",
+    "test:analise": "node --import tsx --test lib/analise-credito/regras.test.ts",
     "test:contratos": "cd lib/agente-contratos && node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {

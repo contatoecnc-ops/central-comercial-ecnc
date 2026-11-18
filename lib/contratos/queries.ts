@@ -4,6 +4,7 @@
  */
 import { createClient } from "@/lib/supabase/server";
 import type { RegistroContrato } from "@/lib/agente-contratos";
+import type { SeloAnalise } from "@/lib/analise-credito/regras";
 import type { DocumentoExigido } from "@/lib/agente-contratos/repositorio/tipos";
 
 export interface ContratoCard {
@@ -25,10 +26,15 @@ export interface ContratoCard {
   equipamento: { tipo?: string; modelo?: string } | null;
   /** Assinatura recusada no ZapSign (destaque vermelho). */
   recusado: boolean;
+  parcelas: number | null;
+  /** Selo da análise de crédito (só contrato parcelado); calculado no servidor. */
+  analise?: SeloAnalise | null;
+  /** Motivo que desabilita "Aprovar" (só quando ANALISE_CREDITO_OBRIGATORIA = true). */
+  bloqueioAprovar?: string | null;
 }
 
 const CAMPOS_CARD =
-  "id, numero, status, vendedor_id, vendedor_nome, cliente_razao_social, cliente_tipo_pessoa, valor_total_centavos, condicao_pagamento, nivel_aprovacao, motivos_nivel, documentos, motivo_reprovacao, created_at, updated_at, equipamento:dados->equipamento";
+  "id, numero, status, vendedor_id, vendedor_nome, cliente_razao_social, cliente_tipo_pessoa, valor_total_centavos, condicao_pagamento, nivel_aprovacao, motivos_nivel, documentos, motivo_reprovacao, created_at, updated_at, equipamento:dados->equipamento, parcelas:dados->pagamento->parcelas";
 
 export async function listarContratos(opts: { vendedorId?: string; cancelados?: boolean }): Promise<ContratoCard[]> {
   const supabase = createClient();

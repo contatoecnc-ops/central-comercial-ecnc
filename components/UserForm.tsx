@@ -49,6 +49,7 @@ export function UserForm() {
           <option value="vendedor">Vendedor</option>
           <option value="marketing">Marketing</option>
           <option value="analista">Analista (somente leitura)</option>
+          <option value="financeiro">Financeiro (análises de crédito)</option>
           <option value="admin">Admin</option>
         </Select>
       </Field>
