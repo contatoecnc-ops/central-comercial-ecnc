@@ -11,6 +11,7 @@ import {
   Megaphone,
   PackagePlus,
   Cpu,
+  FileSignature,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -40,6 +41,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/admin/manuais", label: "Manuais", icon: BookOpen },
     { href: "/admin/conteudo", label: "Conteúdo", icon: Megaphone },
     { href: "/admin/conteudo/solicitacoes", label: "Solicitações", icon: Inbox },
+    { href: "/admin/contratos", label: "Contratos", icon: FileSignature },
     { href: "/admin/analise", label: "Análise", icon: BarChart3 },
     { href: "/admin/michele", label: "Michele IA", icon: Bot },
     { href: "/admin/usuarios", label: "Usuários", icon: Users },
@@ -69,9 +71,23 @@ const NAV: Record<Role, NavItem[]> = {
   ],
 };
 
-export function Sidebar({ role, name, badges = {} }: { role: Role; name: string; badges?: Record<string, number> }) {
+// Contratos do vendedor: só aparece para quem tem "Contratos" liberado (soft launch).
+const CONTRATOS_VENDEDOR: NavItem = { href: "/vendedor/contratos", label: "Contratos", icon: FileSignature };
+
+export function Sidebar({
+  role,
+  name,
+  badges = {},
+  contratosLiberado = false,
+}: {
+  role: Role;
+  name: string;
+  badges?: Record<string, number>;
+  contratosLiberado?: boolean;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const items = role === "vendedor" && contratosLiberado ? [...NAV.vendedor, CONTRATOS_VENDEDOR] : NAV[role];
 
   const panel = (
     <div className="flex h-full flex-col">
@@ -83,8 +99,8 @@ export function Sidebar({ role, name, badges = {} }: { role: Role; name: string;
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
-        {NAV[role].map(({ href, label, icon: Icon }) => {
-          const best = NAV[role]
+        {items.map(({ href, label, icon: Icon }) => {
+          const best = items
             .filter((n) => pathname === n.href || pathname.startsWith(n.href + "/"))
             .sort((a, b) => b.href.length - a.href.length)[0];
           const active = best?.href === href;

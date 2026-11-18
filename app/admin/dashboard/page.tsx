@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatTile } from "@/components/StatTile";
 import { TaskCard } from "@/components/TaskCard";
 import { Card, EmptyState } from "@/components/ui/card";
+import { countContratosAguardando } from "@/lib/contratos/queries";
 import { listSalesNumbers, listTasks, listVendedores } from "@/lib/queries";
 import { getSLA, isOpen, isOwnTask, sortTasks } from "@/lib/sla";
 import { COMPANY_LABEL } from "@/lib/sales-config";
@@ -11,7 +12,9 @@ import { fmtBRL, fmtPct, fmtPeriod } from "@/lib/sales/format";
 import { currentPeriodOf, pct } from "@/lib/sales/view";
 
 export default async function AdminDashboard() {
-  await requireProfile(["admin", "analista"]);
+  const me = await requireProfile(["admin", "analista"]);
+  // Contratos são dados pessoais de clientes: o analista não vê nem a contagem.
+  const contratosAguardando = me.role === "admin" ? await countContratosAguardando() : null;
   const [allTasks, vendedores, sales] = await Promise.all([listTasks(), listVendedores(false), listSalesNumbers()]);
   // SLA só considera tarefas atribuídas pelo gestor; as próprias do vendedor entram em contador separado
   const tasks = allTasks.filter((t) => !isOwnTask(t));
@@ -48,6 +51,11 @@ export default async function AdminDashboard() {
         <StatTile label="Vencem em 24h" value={soon.length} tone="warn" />
         <StatTile label="Concluídas" value={tasks.filter((t) => t.status === "concluida").length} tone="ok" />
       </div>
+      {contratosAguardando !== null && (
+        <Link href="/admin/contratos" className="mt-4 block max-w-xs">
+          <StatTile label="Contratos aguardando aprovação" value={contratosAguardando} tone={contratosAguardando > 0 ? "warn" : "default"} />
+        </Link>
+      )}
       <p className="mt-3 text-xs text-muted">
         Índices de SLA consideram só tarefas atribuídas pelo gestor. Tarefas próprias dos vendedores abertas:{" "}
         <Link href="/admin/tarefas?origem=vendedor" className="font-semibold text-white hover:text-brand">

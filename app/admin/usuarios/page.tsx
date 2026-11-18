@@ -58,6 +58,11 @@ export default async function UsuariosPage() {
                 <td className="px-4 py-3 text-muted">{fmtDate(u.created_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
+                    {(u.role === "vendedor" || u.role === "admin") && (
+                      <ButtonLink href={`/admin/usuarios/${u.id}/contrato`} variant="outline" size="sm">
+                        Dados para contrato
+                      </ButtonLink>
+                    )}
                     {u.role === "vendedor" && (
                       <ButtonLink href={`/admin/usuarios/${u.id}/lembretes`} variant="outline" size="sm">
                         Lembretes

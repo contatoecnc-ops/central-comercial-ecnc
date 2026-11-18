@@ -10,6 +10,10 @@ function analistaReadable(pathname: string) {
   return pathname.startsWith("/analista/") || (ANALISTA_READ.test(pathname) && !ANALISTA_WRITE.test(pathname));
 }
 
+// Contratos (dados pessoais de clientes): admin só em /admin/contratos*, vendedor só em /vendedor/contratos*.
+// Marketing, analista e papel trocado caem em "Acesso negado" (403). A liberação do vendedor (soft launch) é checada no servidor.
+const CONTRATOS = /^\/(admin|vendedor)\/contratos(\/|$)/;
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -57,6 +61,20 @@ export async function middleware(request: NextRequest) {
 
   const home = `/${profile.role}/dashboard`;
   if (pathname === "/login") return redirectTo(home);
+
+  if (CONTRATOS.test(pathname)) {
+    const permitido =
+      (profile.role === "admin" && pathname.startsWith("/admin/")) || (profile.role === "vendedor" && pathname.startsWith("/vendedor/"));
+    if (!permitido) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/acesso-negado";
+      url.search = "";
+      const res = NextResponse.rewrite(url, { status: 403 });
+      response.cookies.getAll().forEach((c) => res.cookies.set(c));
+      return res;
+    }
+    return response;
+  }
 
   // Analista (somente leitura): só as telas de leitura; escrita, Michele e usuários caem em "acesso negado" (403).
   if (profile.role === "analista") {
