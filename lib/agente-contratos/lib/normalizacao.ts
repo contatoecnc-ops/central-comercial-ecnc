@@ -40,6 +40,12 @@ export function normalizarDados(entrada: DadosContratoEntrada): ResultadoNormali
   if (!f) return { dados, ajustes_automaticos: ajustes, erros };
   if (!eq.tipo) eq.tipo = f.tipo;
 
+  // ---- modelo no nome canônico do catálogo (famílias numeradas: L-1610, L-6040, F-1530...)
+  if (/^[LF]-\d+$/.test(f.id) && eq.modelo.trim() !== f.id) {
+    eq.modelo = f.id;
+    ajustes.push(`Modelo padronizado para ${f.id}`);
+  }
+
   // ---- marca padrão
   if (f.tipo === "fiber") {
     if (!eq.marca_laser) {

@@ -37,8 +37,30 @@ test("1) L-1610: o tipo sai do catálogo; 1610, l1610 e L-1610 são reconhecidos
     assert.equal(reconhecerFamilia(m)?.id, "L-1610", m);
     assert.ok(validar(com({ modelo: m })).ok, m);
   }
-  // Fora do formato do catálogo: não adivinha
-  assert.equal(reconhecerFamilia("ECNC CO2 1610"), undefined);
+  // Texto extra ao redor é aceito se exatamente UMA família casar
+  for (const m of ["ECNC CO2 1610 100W", "ECNC CO2 1610", "máquina l-1610 (90W)", "ECNC L 1610 Pro"]) assert.equal(reconhecerFamilia(m)?.id, "L-1610", m);
+  assert.equal(reconhecerFamilia("ECNC CO2 6040")?.id, "L-6040");
+  assert.equal(reconhecerFamilia("F-1530 Fiber Cut")?.id, "F-1530", "F-1530 vence o Fiber genérico");
+  // Mais de uma família, ou nenhuma: pede confirmação
+  assert.equal(reconhecerFamilia("L-1610 ou L-1210"), undefined);
+  assert.equal(reconhecerFamilia("1610 UV"), undefined);
+  assert.equal(reconhecerFamilia("ECNC CO2 1390"), undefined);
+  assert.equal(reconhecerFamilia("ECNC CO2 16100"), undefined, "número colado em outro não vale");
+  assert.match(erros(com({ modelo: "L-1610 ou L-1210" })), /confirmar o modelo/);
+
+  // O modelo é gravado no nome canônico (IV.3 padronizado)
+  for (const m of ["1610", "l1610", "ECNC CO2 1610 100W"]) {
+    const v = validar(com({ modelo: m }));
+    assert.ok(v.ok, m);
+    assert.equal(v.dados!.equipamento.modelo, "L-1610", m);
+    const vars = montarVariaveis({ numero: "2800-26", data_contrato: HOJE, dados: v.dados!, pagamento: v.pagamento!, vendedor });
+    assert.equal(vars.EQUIPAMENTO_MODELO, "L-1610");
+  }
+  assert.deepEqual(validar(com({ modelo: "1610" })).ajustes_automaticos, ["Modelo padronizado para L-1610"]);
+  assert.deepEqual(validar(com({ modelo: "L-1610" })).ajustes_automaticos, [], "já canônico: sem ajuste");
+  assert.equal(validar(com({ modelo: "6040", potencia: "60W", marca_laser: "SPT" })).dados!.equipamento.modelo, "L-6040");
+  // Fiber/Marking e demais: o texto do vendedor é mantido
+  assert.equal(validar(com({ modelo: "ECNC Fiber Marking 30W", tipo: "fiber", potencia: "30W" })).dados!.equipamento.modelo, "ECNC Fiber Marking 30W");
   // F-1530 vem antes do Fiber genérico
   assert.equal(reconhecerFamilia("F1530")?.tipo, "fiber_corte");
   assert.equal(reconhecerFamilia("F-1530")?.tipo, "fiber_corte");
@@ -51,7 +73,7 @@ test("2) L-6040 sem marca vira SPT (listado nos ajustes); 90W não existe", () =
   const v = validar(d);
   assert.ok(v.ok, v.erros.join("; "));
   assert.equal(v.dados!.equipamento.marca_laser, "SPT");
-  assert.deepEqual(v.ajustes_automaticos, ["Marca SPT aplicada (padrão do L-6040)"]);
+  assert.deepEqual(v.ajustes_automaticos, ["Modelo padronizado para L-6040", "Marca SPT aplicada (padrão do L-6040)"]);
   assert.ok(v.alertas.includes("Ajuste automático: Marca SPT aplicada (padrão do L-6040)"), "ajustes entram nos alertas");
   assert.match(erros(com({ modelo: "L-6040", potencia: "90W", marca_laser: "SPT" })), /não existe em 90W/);
   // marca informada é respeitada, mas precisa ser aceita
@@ -245,7 +267,10 @@ test("9) Entrada: restante na finalização da fabricação", () => {
   ].join("\n"));
   assert.equal(vars.IV7_PRAZO_ENTREGA, "10 (DEZ) DIAS ÚTEIS APÓS A COMPENSAÇÃO INTEGRAL DA ENTRADA");
   assert.ok(v.alertas.includes("Parte da entrada (R$ 9.937,50) só na finalização da fabricação — a máquina só sai com a entrada quitada integralmente."));
+  assert.ok(v.alertas.includes("Prazo de entrega passa a contar após a finalização da fabricação (quitação da entrada)."));
   assert.ok(!v.alertas.some((a) => a.includes("depois da compensação do último")));
+  // sem fim_fabricacao esse alerta não existe
+  assert.ok(!validar(comEntrada([{ valor_centavos: 1000000, momento: "assinatura" }, { valor_centavos: 993750, momento: "data", data: "2026-11-30" }])).alertas.some((a) => a.includes("Prazo de entrega passa")));
   assert.match(vars.CLAUSULA_PAGAMENTO, /\(b\) R\$ 9\.937,50 \(nove mil, novecentos e trinta e sete reais e cinquenta centavos\) por PIX na finalização da fabricação, antes da saída do equipamento/);
   assert.equal(v.nivel, 1);
 
@@ -316,7 +341,7 @@ test("11) Contratos antigos: leitura sem erro (padrões do schema) e correção 
   // JSON como estava gravado em contratos.dados (sem os campos novos)
   const antigo: any = JSON.parse(JSON.stringify(CASOS.boleto_15x()));
   delete antigo.frete_instalacao_embutidos;
-  antigo.equipamento.modelo = "ECNC CO2 1610";
+  antigo.equipamento.modelo = "ECNC CO2 1390";
   antigo.pagamento = {
     condicao: "entrada_boleto_nf", parcelas: 15,
     entrada_pagamentos: [{ valor_centavos: 1000000, data: HOJE, meio: "pix" }, { valor_centavos: 700000, data: "2026-11-20", meio: "pix" }],
@@ -347,7 +372,7 @@ test("11) Contratos antigos: leitura sem erro (padrões do schema) e correção 
   const val: any = (await executarFerramenta("validar_contrato", { dados: dadosAntigos }, ctx)).conteudo;
   assert.equal(val.ok, false);
   assert.equal(val.erros.length, 1);
-  assert.match(val.erros[0], /^Modelo "ECNC CO2 1610" não bate com nenhum do catálogo — peça ao vendedor para confirmar o modelo\. Aceitos: .*L-1610/);
+  assert.match(val.erros[0], /^Modelo "ECNC CO2 1390" não bate com nenhum do catálogo — peça ao vendedor para confirmar o modelo\. Aceitos: .*L-1610/);
   assert.doesNotMatch(val.erros[0], /Campo "|undefined|TypeError/);
 
   const ger = await executarFerramenta("gerar_contrato_para_aprovacao", { dados: dadosAntigos, confirmado_pelo_vendedor: true, contrato_id: r.contrato.id }, ctx);

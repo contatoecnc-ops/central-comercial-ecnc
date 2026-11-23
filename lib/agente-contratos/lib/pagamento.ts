@@ -157,7 +157,8 @@ export function calcularPagamento(e: EntradaPagamento): ResultadoPagamento {
       pagamentosEntrada = resolvidos;
       if (valorFimFabricacao)
         alertas.push(`Parte da entrada (${formatarMoeda(valorFimFabricacao)}) só na finalização da fabricação — a máquina só sai com a entrada quitada integralmente.`);
-      else if (pags.length > 1)
+      if (valorFimFabricacao) alertas.push("Prazo de entrega passa a contar após a finalização da fabricação (quitação da entrada).");
+      if (!valorFimFabricacao && pags.length > 1)
         alertas.push(`Entrada em ${pags.length} pagamentos: a máquina só sai depois da compensação do último (${ultimo && dataIsoValida(ultimo) ? formatarData(ultimo) : "?"}).`);
     }
   }

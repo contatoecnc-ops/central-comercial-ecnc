@@ -6,11 +6,11 @@
  * tudo contra este catálogo e o prompt do agente é gerado dele.
  *
  * Reconhecimento do modelo (ignora maiúsculas, acentos, espaços e hífen):
- *  - famílias numeradas (L-6040, L-560, L-1060, L-1210, L-1610, F-1530): o texto inteiro
- *    precisa ser o nome da família ("l1610", "L-1610" ou "1610"). Texto com mais coisa
- *    (ex.: "ECNC CO2 1610") NÃO é reconhecido — o agente pede para confirmar o modelo.
+ *  - famílias numeradas (L-6040, L-560, L-1060, L-1210, L-1610, F-1530): o número (com ou sem
+ *    "L"/"F" e hífen) pode vir com texto ao redor ("ECNC CO2 1610 100W" → L-1610), desde que
+ *    EXATAMENTE UMA família case. Se casar mais de uma ou nenhuma, o agente pede para confirmar o modelo.
  *  - Router, UV, Solda e Fiber: pela palavra-chave dentro do modelo.
- * A ordem da lista importa: F-1530 é testado antes do Fiber genérico.
+ * F-1530 tem precedência sobre o Fiber genérico. O modelo é gravado no nome canônico (normalizarDados).
  */
 import type { TipoMaquina } from "./modelos";
 
@@ -40,9 +40,7 @@ export interface FamiliaEquipamento {
   /** Como aparece nas mensagens. */
   nome: string;
   tipo: TipoMaquina;
-  /** Escrita aceita (já sem maiúsculas, acento, espaço e hífen) — o modelo inteiro precisa ser igual. */
-  apelidos?: string[];
-  /** Ou: palavra dentro do modelo (texto em minúsculas, sem acento). */
+  /** Padrão procurado dentro do modelo (texto em minúsculas, sem acento). */
   palavra?: RegExp;
   /** Como o vendedor escreve (só para o prompt). */
   como_escreve: string;
@@ -66,7 +64,7 @@ const co2 = (id: string, numero: string, potencias: number[], extra: Partial<Fam
   id,
   nome: id,
   tipo: "co2",
-  apelidos: [id.replace("-", "").toLowerCase(), numero],
+  palavra: new RegExp(`(?<![0-9])(?:l[\\s-]*)?${numero}(?![0-9])`),
   como_escreve: `${id} (ou "${numero}")`,
   potencias_w: potencias,
   tem_potencia: true,
@@ -77,7 +75,7 @@ const co2 = (id: string, numero: string, potencias: number[], extra: Partial<Fam
 
 export const FAMILIAS: FamiliaEquipamento[] = [
   {
-    id: "F-1530", nome: "F-1530", tipo: "fiber_corte", apelidos: ["f1530"], como_escreve: `F-1530 ("F1530")`,
+    id: "F-1530", nome: "F-1530", tipo: "fiber_corte", palavra: /(?<![a-z0-9])f[\s-]*1530(?![0-9])/, como_escreve: `F-1530 ("F1530")`,
     tem_potencia: true, tem_marca: false,
   },
   co2("L-6040", "6040", [50, 60], { marca_padrao: "SPT" }),
@@ -100,8 +98,10 @@ const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLo
 export function reconhecerFamilia(modelo: string | undefined): FamiliaEquipamento | undefined {
   if (!modelo?.trim()) return undefined;
   const baixo = semAcento(modelo);
-  const colado = baixo.replace(/[\s\-_.]/g, "");
-  return FAMILIAS.find((f) => f.apelidos?.includes(colado) || f.palavra?.test(baixo));
+  let achadas = FAMILIAS.filter((f) => f.palavra?.test(baixo));
+  // F-1530 vence o Fiber genérico ("F-1530 Fiber")
+  if (achadas.some((f) => f.id === "F-1530")) achadas = achadas.filter((f) => f.id !== "Fiber");
+  return achadas.length === 1 ? achadas[0] : undefined;
 }
 
 /** "100w", "100 W", "100W" → 100; "3kW" → 3000. Texto que não é potência → undefined. */
