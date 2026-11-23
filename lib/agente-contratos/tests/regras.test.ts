@@ -170,8 +170,8 @@ test("Entrada dividida (sinal + restante): texto padronizado e entrega só após
   d.pagamento = {
     condicao: "entrada_boleto_nf",
     entrada_pagamentos: [
-      { valor_centavos: 1000000, data: "2026-11-13", meio: "pix" },
-      { valor_centavos: 993750, data: "2026-11-30", meio: "pix" },
+      { valor_centavos: 1000000, momento: "data", data: "2026-11-13", meio: "pix" },
+      { valor_centavos: 993750, momento: "data", data: "2026-11-30", meio: "pix" },
     ],
     parcelas: 15,
   };

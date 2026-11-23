@@ -24,6 +24,7 @@ const base = (): Omit<DadosContrato, "equipamento" | "acessorios" | "preco_total
   testemunha_cliente: { nome: "Ana Paula Costa", cpf: "111.444.777-35", email: "ana@metalexemplo.com.br", celular: "(14) 99888-7766" },
   responsavel_frete: "COMPRADOR",
   responsavel_instalacao: "VENDEDOR",
+  frete_instalacao_embutidos: false,
 });
 
 /**
@@ -34,7 +35,7 @@ export const CASOS = {
   /** Recorte 1 — R$ 19.900 à vista no PIX, pronta entrega */
   vista_pix: (): DadosContrato => ({
     ...base(),
-    equipamento: { tipo: "co2", potencia: "100W", marca_laser: "RECI", quantidade: 1, modelo: "ECNC CO2 1390", descricao: "Máquina de corte e gravação a laser CO₂", preco_centavos: 1990000 },
+    equipamento: { tipo: "co2", potencia: "100W", marca_laser: "RECI", quantidade: 1, modelo: "L-1610", descricao: "Máquina de corte e gravação a laser CO₂", preco_centavos: 1990000 },
     acessorios: [],
     preco_total_centavos: 1990000,
     pagamento: { condicao: "a_vista" },
@@ -44,7 +45,7 @@ export const CASOS = {
   /** Recorte 2 — R$ 37.600, entrada 17.000, saldo em 15 boletos */
   boleto_15x: (): DadosContrato => ({
     ...base(),
-    equipamento: { tipo: "co2", potencia: "100W", marca_laser: "RECI", quantidade: 1, modelo: "ECNC CO2 1610", descricao: "Máquina de corte a laser CO₂", preco_centavos: 3760000 },
+    equipamento: { tipo: "co2", potencia: "90W", marca_laser: "RECI", quantidade: 1, modelo: "L-1610", descricao: "Máquina de corte a laser CO₂", preco_centavos: 3760000 },
     acessorios: [{ descricao: "Garantia estendida do tubo laser de 03 meses (totalizando 06 meses de garantia)", valor_centavos: 0 }],
     preco_total_centavos: 3760000,
     pagamento: { condicao: "entrada_boleto_nf", entrada_centavos: 1700000, parcelas: 15 },
@@ -54,7 +55,7 @@ export const CASOS = {
   /** Recorte 3 — R$ 39.523,61 + 3 acessórios + bonificação = R$ 62.923,61, entrada 28.500 (parcelas não visíveis: assumido 6) */
   acessorios: (): DadosContrato => ({
     ...base(),
-    equipamento: { tipo: "co2", potencia: "100W", marca_laser: "RECI", quantidade: 1, modelo: "ECNC CO2 1610 Pro", descricao: "Máquina de corte a laser CO₂", preco_centavos: 3952361 },
+    equipamento: { tipo: "co2", potencia: "90W", marca_laser: "RECI", quantidade: 1, modelo: "L-1610", descricao: "Máquina de corte a laser CO₂", preco_centavos: 3952361 },
     acessorios: [
       { descricao: "Câmera CCD", valor_centavos: 2000000 },
       { descricao: "Colmeia", valor_centavos: 140000 },
@@ -97,7 +98,7 @@ export const CASOS = {
   }),
 };
 
-/** Comprador pessoa física — máquina Fiber (UV), PIX à vista. */
+/** Comprador pessoa física — máquina Fiber, PIX à vista. */
 export const casoPF = (): DadosContrato => ({
   contratante: {
     tipo_pessoa: "PF",
@@ -113,13 +114,14 @@ export const casoPF = (): DadosContrato => ({
     endereco: { logradouro: "Rua das Flores", numero: "120", bairro: "Centro", cidade: "Garça", uf: "SP", cep: "17400-000" },
   },
   testemunha_cliente: { nome: "Pedro Henrique Lima", cpf: "390.533.447-05", email: "pedro@exemplo.com.br", celular: "(14) 99777-1122" },
-  equipamento: { tipo: "fiber", potencia: "5W", marca_laser: "HUARAY", quantidade: 1, modelo: "ECNC UV 5W", descricao: "Máquina de marcação a laser UV", preco_centavos: 3500000 },
+  equipamento: { tipo: "fiber", potencia: "5W", marca_laser: "RAYCUS", quantidade: 1, modelo: "ECNC Fiber Marking 5W", descricao: "Máquina de marcação a laser Fiber", preco_centavos: 3500000 },
   acessorios: [],
   preco_total_centavos: 3500000,
   pagamento: { condicao: "a_vista" },
   prazo_entrega: { tipo: "pronta_entrega" },
   responsavel_frete: "COMPRADOR",
   responsavel_instalacao: "COMPRADOR",
+  frete_instalacao_embutidos: false,
 });
 
 export const dadosExemplo = CASOS.boleto_15x;

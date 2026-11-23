@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { CONDICOES, NIVEIS } from "../config/condicoes-pagamento";
+import { CONDICOES, NIVEIS, type Nivel } from "../config/condicoes-pagamento";
+import { reconhecerFamilia } from "../config/equipamentos";
 import { cnpjValido, formatarCnpj, somenteDigitos } from "../lib/documentos";
 import type { ConsultaCnpj, DadosReceita } from "../lib/cnpj-api";
 import { formatarMoeda, hojeBrasilia } from "../lib/formatacao";
@@ -35,7 +36,7 @@ const pagamentoJsonSchema = jsonSchema(PagamentoSchema);
 pagamentoJsonSchema.properties.condicao.enum = CONDICOES.map((c) => c.id);
 
 /** Resumo do pagamento para a IA mostrar ao vendedor. */
-const resumoPagamento = (r: ResultadoPagamento) => ({
+const resumoPagamento = (r: ResultadoPagamento, final?: { nivel?: Nivel; motivos_nivel?: string[] }) => ({
   condicao: r.condicao?.nome,
   forma_pagamento_IV11: r.campos?.forma_pagamento,
   valor_entrada_IV6: r.campos?.valor_entrada,
@@ -44,9 +45,9 @@ const resumoPagamento = (r: ResultadoPagamento) => ({
   resumo: r.campos?.condicao_resumo,
   saldo: formatarMoeda(r.saldo_centavos),
   parcelas: r.parcelas_centavos.length ? descreverParcelas(r.parcelas_centavos) : undefined,
-  nivel_atencao: r.nivel,
-  nivel_nome: NIVEIS[r.nivel].nome,
-  motivos_nivel: r.motivos_nivel,
+  nivel_atencao: final?.nivel ?? r.nivel,
+  nivel_nome: NIVEIS[final?.nivel ?? r.nivel].nome,
+  motivos_nivel: final?.motivos_nivel ?? r.motivos_nivel,
   documentos_exigidos: r.documentos,
   pontos_atencao: r.condicao?.pontos_atencao,
 });
@@ -77,7 +78,7 @@ export const FERRAMENTAS: Anthropic.Tool[] = [
   },
   {
     name: "validar_contrato",
-    description: "Validação completa de todos os dados do contrato (documentos, valores, pagamento, Receita). Retorna erros (bloqueiam) e alertas (não bloqueiam).",
+    description: "Validação completa de todos os dados do contrato (equipamento no catálogo, documentos, valores, pagamento, Receita). Retorna erros (bloqueiam), alertas (não bloqueiam) e ajustes_automaticos (o que o sistema preencheu sozinho: marca padrão, garantia do CO₂ 90W) — mostre os ajustes ao vendedor no resumo final.",
     input_schema: { type: "object", properties: { dados: dadosJsonSchema }, required: ["dados"] },
   },
   {
@@ -136,8 +137,18 @@ export async function executarFerramenta(nome: string, entrada: any, ctx: Contex
           ok: v.ok,
           erros: v.erros,
           alertas: v.alertas,
+          ajustes_automaticos: v.ajustes_automaticos,
+          equipamento_normalizado: v.dados
+            ? {
+                familia: reconhecerFamilia(v.dados.equipamento.modelo)?.nome,
+                tipo: v.dados.equipamento.tipo,
+                potencia: v.dados.equipamento.potencia,
+                marca_laser: v.dados.equipamento.marca_laser,
+                opcionais: v.dados.acessorios.map((a) => a.descricao),
+              }
+            : undefined,
           equipamento_mais_acessorios: v.preco_base_centavos !== undefined ? formatarMoeda(v.preco_base_centavos) : undefined,
-          ...(v.ok && v.pagamento ? resumoPagamento(v.pagamento) : {}),
+          ...(v.ok && v.pagamento ? resumoPagamento(v.pagamento, v) : {}),
         },
       };
     }

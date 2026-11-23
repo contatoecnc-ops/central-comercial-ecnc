@@ -4,6 +4,7 @@ import {
 } from "./lib/zapsign";
 import { APROVACAO, NUMERACAO } from "./config/empresa";
 import { modeloDoTipo } from "./config/modelos";
+import { mensagemSemModelo } from "./lib/normalizacao";
 import type { DadosReceita } from "./lib/cnpj-api";
 import { somenteDigitos } from "./lib/documentos";
 import { hojeBrasilia } from "./lib/formatacao";
@@ -48,7 +49,7 @@ export async function gerarContratoParaAprovacao(p: {
   // O modelo sai do tipo de máquina — a IA não escolhe.
   const modelo = modeloDoTipo(v.dados.equipamento.tipo);
   if (!modelo)
-    return { ok: false, erros: [`Ainda não há modelo de contrato para máquina "${v.dados.equipamento.tipo}" — fale com o gestor.`], alertas: v.alertas };
+    return { ok: false, erros: [mensagemSemModelo(v.dados.equipamento.tipo)], alertas: v.alertas };
   const modelo_id = modelo.id;
 
   let existente: RegistroContrato | null = null;
@@ -78,7 +79,7 @@ export async function gerarContratoParaAprovacao(p: {
   const alertas = [...v.alertas];
 
   // O aviso vai no nome do arquivo: é o que o gestor vê na lista do ZapSign ao assinar.
-  const nivel = v.pagamento.nivel;
+  const nivel = v.nivel ?? v.pagamento.nivel;
   const prefixo = nivel === 3 ? "ATENÇÃO MÁXIMA - " : nivel === 2 ? "ATENÇÃO - " : "";
   const nomeArquivo = `${prefixo}${numero} - ${v.dados.contratante.razao_social}`.replace(/[\\/:*?"<>|]/g, "-");
   const arquivo_path = await p.repo.salvarArquivo(`${ano}/${nomeArquivo}.docx`, arquivo);
@@ -104,8 +105,8 @@ export async function gerarContratoParaAprovacao(p: {
     dados: v.dados,
     variaveis,
     alertas,
-    nivel_aprovacao: v.pagamento.nivel,
-    motivos_nivel: v.pagamento.motivos_nivel,
+    nivel_aprovacao: nivel,
+    motivos_nivel: v.motivos_nivel ?? v.pagamento.motivos_nivel,
     aprovacoes_necessarias: precisaAprovacao ? [APROVACAO.papel] : [],
     aprovacoes: [],
     documentos,

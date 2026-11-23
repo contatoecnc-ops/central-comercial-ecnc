@@ -152,11 +152,12 @@ test("loop do agente com IA simulada", async () => {
   assert.equal(r.texto, "Contrato gerado e enviado para aprovação.");
   assert.ok(r.contrato_gerado);
   assert.equal(recebidos[0].tools.length, 5);
+  assert.match(recebidos[0].system[0].text, /L-1610/, "o catálogo vai no prompt");
   assert.match(recebidos[0].system[0].text, /faturado_recebimento/);
   assert.equal(r.mensagens.length, 6);
 });
 
-test("modelos reais: Fiber e CO₂ pelo tipo; UV/solda ainda sem modelo; CO₂ só 1 unidade", async () => {
+test("modelos reais: Fiber e CO₂ pelo tipo; UV, Fiber de corte (e solda/Router) ainda sem modelo; CO₂ só 1 unidade", async () => {
   const repo = await novoRepo();
   const co2 = await gerar(repo, CASOS.vista_pix());
   const fiber = await gerarContratoParaAprovacao({ repo, dados: casoPF(), vendedor, data_contrato: HOJE });
@@ -168,18 +169,18 @@ test("modelos reais: Fiber e CO₂ pelo tipo; UV/solda ainda sem modelo; CO₂ s
   assert.ok(!txt.includes("{{"), "sobrou variável");
   assert.match(txt, /MARIA OLIVEIRA SANTOS/);
   assert.match(txt, /153\.509\.460-56/);
-  assert.match(txt, /ECNC UV 5W\/5W\/HUARAY/);
+  assert.match(txt, /ECNC Fiber Marking 5W\/5W\/RAYCUS Q\/QB/);
   assert.match(txt, /01 \(UM\)/);
   assert.match(txt, /PEDRO HENRIQUE LIMA/);
   assert.match(txt, /VENDEDOR TESTE/);
   assert.match(txt, /987\.654\.321-00/);
 
   const uv = CASOS.vista_pix();
-  uv.equipamento.tipo = "uv";
+  uv.equipamento = { ...uv.equipamento, tipo: "uv", modelo: "ECNC UV 5W", potencia: undefined, marca_laser: undefined };
   const r = await gerar(repo, uv);
   assert.ok(!r.ok && r.erros[0].includes("Ainda não há modelo"));
   const corte = CASOS.faturado();
-  corte.equipamento.tipo = "fiber_corte";
+  corte.equipamento = { ...corte.equipamento, tipo: "fiber_corte", modelo: "F-1530" };
   const rc = await gerar(repo, corte);
   assert.ok(!rc.ok && rc.erros[0].includes("Ainda não há modelo"));
 

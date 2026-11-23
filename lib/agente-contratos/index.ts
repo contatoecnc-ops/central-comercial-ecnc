@@ -4,6 +4,8 @@ export type { EstadoAgente } from "./agente/ferramentas";
 export { gerarContratoParaAprovacao, aprovarContrato, reprovarContrato, marcarDocumento, pendenciasAprovacao, marcarEnviado, marcarAssinado, cancelarContrato, formatarNumero, type Vendedor, type Aprovador } from "./servico";
 export { validarContrato } from "./lib/validacao";
 export { calcularPagamento } from "./lib/pagamento";
+export { normalizarDados, conferirEquipamento } from "./lib/normalizacao";
+export { FAMILIAS, reconhecerFamilia, descreverCatalogo } from "./config/equipamentos";
 export { verificarModelo, gerarDocx } from "./lib/gerador-docx";
 export { VARIAVEIS_DISPONIVEIS } from "./lib/variaveis";
 export {

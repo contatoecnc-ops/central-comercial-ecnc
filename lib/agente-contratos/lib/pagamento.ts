@@ -4,7 +4,13 @@ import {
 } from "../config/condicoes-pagamento";
 import { dataIsoValida, diasEntre, formatarData, formatarMoeda, hojeBrasilia, inteiroPorExtenso, valorPorExtenso } from "./formatacao";
 
-export interface PagamentoEntrada { valor_centavos: number; data: string; meio?: MeioEntrada }
+/** assinatura = data do contrato; data = data combinada; fim_fabricacao = restante na finalização da fabricação. */
+export type MomentoEntrada = "assinatura" | "data" | "fim_fabricacao";
+
+export interface PagamentoEntrada { valor_centavos: number; momento?: MomentoEntrada; data?: string; meio?: MeioEntrada }
+
+/** Pagamento da entrada já resolvido: "assinatura" ganha a data do contrato; "fim_fabricacao" não tem data. */
+export interface PagamentoEntradaResolvido { valor_centavos: number; meio: MeioEntrada; momento: MomentoEntrada; data?: string }
 
 export interface EntradaPagamento {
   condicao: string;
@@ -30,7 +36,7 @@ export interface ResultadoPagamento {
   condicao?: CondicaoPagamento;
   entrada_centavos: number;
   /** Pagamentos da entrada (1 = único, na assinatura). */
-  entrada_pagamentos: Required<PagamentoEntrada>[];
+  entrada_pagamentos: PagamentoEntradaResolvido[];
   saldo_centavos: number;
   /** Valor de cada parcela (a 1ª pode ter alguns centavos a mais). */
   parcelas_centavos: number[];
@@ -109,30 +115,50 @@ export function calcularPagamento(e: EntradaPagamento): ResultadoPagamento {
   const saldo = total - entrada;
 
   // ---------- Entrada em mais de um pagamento ----------
-  let pagamentosEntrada: Required<PagamentoEntrada>[] = entrada > 0 ? [{ valor_centavos: entrada, data: hoje, meio: "pix" }] : [];
+  let pagamentosEntrada: PagamentoEntradaResolvido[] = entrada > 0 ? [{ valor_centavos: entrada, data: hoje, meio: "pix", momento: "assinatura" }] : [];
   let diasUltimo = 0;
+  let valorFimFabricacao = 0;
   if (pags.length) {
     if (c.entrada.exigencia === "proibido") erros.push(`"${c.nome}" não tem entrada — não informe pagamentos de entrada.`);
     else {
       if (pags.length > ENTRADA_PARCELADA.max_pagamentos) erros.push(`Entrada em no máximo ${ENTRADA_PARCELADA.max_pagamentos} pagamentos.`);
       if (somaPags !== entrada) erros.push(`Pagamentos da entrada somam ${formatarMoeda(somaPags)}, mas a entrada é ${formatarMoeda(entrada)}.`);
+      // fim_fabricacao: no máximo um, e o último. Não entra nas regras de data.
+      const momentos = pags.map((p) => p.momento ?? "data");
+      const iFim = momentos.flatMap((m, i) => (m === "fim_fabricacao" ? [i] : []));
+      if (iFim.length > 1) erros.push("Só pode haver um pagamento da entrada na finalização da fabricação.");
+      else if (iFim.length === 1 && iFim[0] !== pags.length - 1)
+        erros.push("O pagamento da entrada na finalização da fabricação precisa ser o último da lista.");
+      if (iFim.length) valorFimFabricacao = pags[iFim[0]].valor_centavos;
+
       let anterior = hoje;
+      const resolvidos: PagamentoEntradaResolvido[] = [];
       pags.forEach((p, i) => {
+        const momento = momentos[i];
+        const meio = p.meio ?? "pix";
         if (!p.valor_centavos) erros.push(`Pagamento ${i + 1} da entrada sem valor.`);
-        if (!dataIsoValida(p.data)) return void erros.push(`Pagamento ${i + 1} da entrada: data "${p.data}" inválida (use AAAA-MM-DD).`);
-        if (diasEntre(hoje, p.data) < 0) erros.push(`Pagamento ${i + 1} da entrada (${formatarData(p.data)}) é anterior à data do contrato.`);
-        if (diasEntre(anterior, p.data) < 0) erros.push(`Pagamentos da entrada fora de ordem (${formatarData(p.data)}).`);
-        anterior = p.data;
+        if (momento === "fim_fabricacao") return void resolvidos.push({ valor_centavos: p.valor_centavos, meio, momento });
+        const data = momento === "assinatura" ? hoje : p.data;
+        if (!data) return void erros.push(`Pagamento ${i + 1} da entrada: informe a data (AAAA-MM-DD), ou use o momento "assinatura" ou "fim_fabricacao".`);
+        if (!dataIsoValida(data)) return void erros.push(`Pagamento ${i + 1} da entrada: data "${data}" inválida (use AAAA-MM-DD).`);
+        if (diasEntre(hoje, data) < 0) erros.push(`Pagamento ${i + 1} da entrada (${formatarData(data)}) é anterior à data do contrato.`);
+        if (diasEntre(anterior, data) < 0) erros.push(`Pagamentos da entrada fora de ordem (${formatarData(data)}).`);
+        anterior = data;
+        resolvidos.push({ valor_centavos: p.valor_centavos, meio, momento, data });
       });
-      const ultimo = pags[pags.length - 1].data;
-      if (dataIsoValida(ultimo)) {
+      // Último pagamento COM data (o de fim de fabricação é ignorado).
+      const comData = resolvidos.filter((p) => p.data);
+      const ultimo = comData.length ? comData[comData.length - 1].data : undefined;
+      if (ultimo && dataIsoValida(ultimo)) {
         diasUltimo = diasEntre(hoje, ultimo);
         if (diasUltimo > ENTRADA_PARCELADA.ultimo_dias_max)
           erros.push(`A entrada só fica completa em ${diasUltimo} dias; o máximo é ${ENTRADA_PARCELADA.ultimo_dias_max} dias após o contrato.`);
       }
-      pagamentosEntrada = pags.map((p) => ({ valor_centavos: p.valor_centavos, data: p.data, meio: p.meio ?? "pix" }));
-      if (pags.length > 1)
-        alertas.push(`Entrada em ${pags.length} pagamentos: a máquina só sai depois da compensação do último (${dataIsoValida(ultimo) ? formatarData(ultimo) : "?"}).`);
+      pagamentosEntrada = resolvidos;
+      if (valorFimFabricacao)
+        alertas.push(`Parte da entrada (${formatarMoeda(valorFimFabricacao)}) só na finalização da fabricação — a máquina só sai com a entrada quitada integralmente.`);
+      else if (pags.length > 1)
+        alertas.push(`Entrada em ${pags.length} pagamentos: a máquina só sai depois da compensação do último (${ultimo && dataIsoValida(ultimo) ? formatarData(ultimo) : "?"}).`);
     }
   }
 
@@ -152,11 +178,12 @@ export function calcularPagamento(e: EntradaPagamento): ResultadoPagamento {
     }
     if (s.meio === "boleto" && e.primeiro_vencimento_data) {
       const d = e.primeiro_vencimento_data;
-      const fimEntrada = pagamentosEntrada.length ? pagamentosEntrada[pagamentosEntrada.length - 1].data : hoje;
+      const comDataEntrada = pagamentosEntrada.filter((p) => p.data);
+      const fimEntrada = comDataEntrada.length ? comDataEntrada[comDataEntrada.length - 1].data! : hoje;
       if (e.dias_primeira_parcela !== undefined) erros.push("Informe o 1º boleto OU em dias após a NF OU com data fixa — não os dois.");
       if (!dataIsoValida(d)) erros.push(`Data do 1º boleto "${d}" inválida (use AAAA-MM-DD).`);
       else if (diasEntre(fimEntrada, d) <= 0)
-        erros.push(`1º boleto (${formatarData(d)}) precisa vencer depois ${pagamentosEntrada.length ? `do último pagamento da entrada (${formatarData(fimEntrada)})` : "da data do contrato"}.`);
+        erros.push(`1º boleto (${formatarData(d)}) precisa vencer depois ${comDataEntrada.length ? `do último pagamento da entrada (${formatarData(fimEntrada)})` : "da data do contrato"}.`);
       else if (diasEntre(hoje, d) > PRIMEIRO_BOLETO_DATA_FIXA.max_dias_apos_contrato)
         erros.push(`1º boleto em ${formatarData(d)} (${diasEntre(hoje, d)} dias após o contrato); o máximo com data fixa é ${PRIMEIRO_BOLETO_DATA_FIXA.max_dias_apos_contrato} dias.`);
       else {
@@ -226,6 +253,9 @@ export function calcularPagamento(e: EntradaPagamento): ResultadoPagamento {
     motivos.push(motivoDataFixa);
     alertas.push(`Atenção do gestor: ${motivoDataFixa}`);
     if (nivel < 2) nivel = 2;
+    // Com a entrada na finalização da fabricação não dá para conferir a ordem das datas.
+    if (valorFimFabricacao)
+      alertas.push("1º boleto com data fixa e entrada na finalização da fabricação — conferir se o boleto não vence antes da saída da máquina");
   }
   if (diasUltimo > ENTRADA_PARCELADA.ultimo_dias_atencao) {
     motivos.push(`Entrada só fica completa ${diasUltimo} dias após o contrato.`);
@@ -281,16 +311,22 @@ function textoIV11(
   return `${meio} — ${primeira}${demais}`;
 }
 
-const quando = (data: string, hoje: string, minusc: boolean) =>
+const quandoData = (data: string, hoje: string, minusc: boolean) =>
   data === hoje ? (minusc ? "na assinatura deste contrato" : "NA ASSINATURA") : `${minusc ? "em" : "EM"} ${formatarData(data)}`;
 
+/** Quando um pagamento da entrada é feito — "NA ASSINATURA", "EM 30/11/2026" ou na finalização da fabricação. */
+const quando = (p: Pick<PagamentoEntradaResolvido, "data" | "momento">, hoje: string, minusc: boolean) =>
+  p.momento === "fim_fabricacao"
+    ? minusc ? "na finalização da fabricação, antes da saída do equipamento" : "NA FINALIZAÇÃO DA FABRICAÇÃO, ANTES DA SAÍDA DO EQUIPAMENTO"
+    : quandoData(p.data ?? hoje, hoje, minusc);
+
 /** IV.6 — texto padronizado; nunca copiado do vendedor. */
-export function textoIV6(entrada: number, pags: Required<PagamentoEntrada>[], hoje: string): string {
+export function textoIV6(entrada: number, pags: PagamentoEntradaResolvido[], hoje: string): string {
   if (pags.length <= 1) {
-    const p = pags[0] ?? { meio: "pix", data: hoje };
-    return `${formatarMoeda(entrada)} VIA ${NOME_MEIO_ENTRADA[p.meio]} ${quando(p.data, hoje, false)}`;
+    const p = pags[0] ?? { meio: "pix" as const, data: hoje, momento: "assinatura" as const };
+    return `${formatarMoeda(entrada)} VIA ${NOME_MEIO_ENTRADA[p.meio]} ${quando(p, hoje, false)}`;
   }
-  const linhas = pags.map((p, i) => `${i + 1}) ${formatarMoeda(p.valor_centavos)} VIA ${NOME_MEIO_ENTRADA[p.meio]} ${quando(p.data, hoje, false)}`);
+  const linhas = pags.map((p, i) => `${i + 1}) ${formatarMoeda(p.valor_centavos)} VIA ${NOME_MEIO_ENTRADA[p.meio]} ${quando(p, hoje, false)}`);
   return [
     `${formatarMoeda(entrada)} EM ${pags.length} PAGAMENTOS:`,
     ...linhas,
@@ -299,17 +335,17 @@ export function textoIV6(entrada: number, pags: Required<PagamentoEntrada>[], ho
 }
 
 /** Como a entrada é paga, em minúsculas (cláusula) ou frase curta (resumo). */
-function formaEntrada(pags: Required<PagamentoEntrada>[], hoje: string, clausula: boolean): string {
+function formaEntrada(pags: PagamentoEntradaResolvido[], hoje: string, clausula: boolean): string {
   const meio = (m: MeioEntrada) => (m === "pix" ? "PIX" : m === "transferencia" ? "transferência bancária" : "boleto bancário");
   if (pags.length <= 1) {
     const p = pags[0];
     if (!p) return "";
-    if (p.meio === "pix" && p.data === hoje && clausula) return "por PIX ou transferência bancária na assinatura deste contrato";
-    return `por ${meio(p.meio)} ${quando(p.data, hoje, true)}`;
+    if (p.meio === "pix" && p.momento !== "fim_fabricacao" && p.data === hoje && clausula) return "por PIX ou transferência bancária na assinatura deste contrato";
+    return `por ${meio(p.meio)} ${quando(p, hoje, true)}`;
   }
   const letras = "abcdefgh";
   return `em ${pags.length} (${inteiroPorExtenso(pags.length)}) pagamentos: ${pags
-    .map((p, i) => `(${letras[i]}) ${formatarMoeda(p.valor_centavos)}${clausula ? ` (${valorPorExtenso(p.valor_centavos)})` : ""} por ${meio(p.meio)} ${quando(p.data, hoje, true)}`)
+    .map((p, i) => `(${letras[i]}) ${formatarMoeda(p.valor_centavos)}${clausula ? ` (${valorPorExtenso(p.valor_centavos)})` : ""} por ${meio(p.meio)} ${quando(p, hoje, true)}`)
     .join("; ")}`;
 }
 

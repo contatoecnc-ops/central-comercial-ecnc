@@ -1,6 +1,6 @@
 /**
  * Modelos de contrato — um por TIPO DE MÁQUINA. Atendem comprador PF e PJ.
- * O modelo é escolhido pelo `equipamento.tipo` informado pelo vendedor — a IA não escolhe.
+ * O modelo é escolhido pelo `equipamento.tipo`, que sai do MODELO da máquina (config/equipamentos.ts) — a IA não escolhe.
  *
  * Os .docx são os modelos dinâmicos REAIS da ECNC, com as variáveis do jeito que
  * já estão no ZapSign ({{NOME OU RAZÃO SOCIAL}}, {{VALOR DA ENTRADA}}...). O agente
@@ -14,7 +14,7 @@
  */
 import type { NomeVariavel } from "../lib/variaveis";
 
-export type TipoMaquina = "co2" | "fiber" | "fiber_corte" | "uv" | "solda";
+export type TipoMaquina = "co2" | "fiber" | "fiber_corte" | "router" | "uv" | "solda";
 
 export interface ModeloContrato {
   id: string;
@@ -102,7 +102,7 @@ export const MODELOS: ModeloContrato[] = [
     zapsign_template_id: { sandbox: "bdbc19d9-769a-42d2-8c7e-485758f941c4", producao: "" },
     mapa: MAPA_ZAPSIGN,
   },
-  // Fiber de corte, UV e solda: ainda sem modelo — o agente avisa o vendedor para falar com o gestor.
+  // Fiber de corte, Router, UV e solda: ainda sem modelo — o agente avisa o vendedor para falar com o gestor.
 ];
 
 export const modeloDoTipo = (tipo: TipoMaquina) => MODELOS.find((m) => m.tipo === tipo);

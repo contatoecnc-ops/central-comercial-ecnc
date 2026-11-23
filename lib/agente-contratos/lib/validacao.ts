@@ -1,15 +1,24 @@
+import type { Nivel } from "../config/condicoes-pagamento";
 import { REGRAS_GERAIS } from "../config/empresa";
 import { DadosContratoSchema, type DadosContrato, type DadosContratoEntrada, type ResultadoValidacao } from "../tipos";
 import type { DadosReceita } from "./cnpj-api";
 import { cnpjValido, cpfValido, emailValido, normalizarNome, somenteDigitos, UFS } from "./documentos";
 import { formatarMoeda } from "./formatacao";
+import { conferirEquipamento, normalizarDados } from "./normalizacao";
 import { calcularPagamento, type ResultadoPagamento } from "./pagamento";
 
 export interface ValidacaoCompleta extends ResultadoValidacao {
   dados?: DadosContrato;
   pagamento?: ResultadoPagamento;
   preco_base_centavos?: number;
+  /** O que o sistema ajustou sozinho (marca padrão, garantia do 90W...). Já estão também em `alertas`. */
+  ajustes_automaticos: string[];
+  /** Nível FINAL do contrato: o maior entre o das regras de pagamento e o das exceções (ex.: frete embutido). */
+  nivel?: Nivel;
+  motivos_nivel?: string[];
 }
+
+export const MOTIVO_FRETE_EMBUTIDO = "Frete e instalação embutidos no preço da máquina (exceção)";
 
 function validarEndereco(prefixo: string, e: DadosContrato["contratante"]["endereco"], erros: string[]) {
   if (!UFS.includes(e.uf.toUpperCase())) erros.push(`${prefixo}: UF "${e.uf}" inválida.`);
@@ -24,10 +33,16 @@ export function validarContrato(entrada: DadosContratoEntrada, opts: { receita?:
   const erros: string[] = [];
   const alertas: string[] = [];
 
-  const parse = DadosContratoSchema.safeParse(entrada);
+  // Etapa 1: o que o catálogo manda e o vendedor não precisa informar (marca padrão, garantia do 90W).
+  const norm = normalizarDados(entrada);
+  const ajustes = norm.ajustes_automaticos;
+  alertas.push(...ajustes.map((a) => `Ajuste automático: ${a}`));
+  erros.push(...norm.erros);
+
+  const parse = DadosContratoSchema.safeParse(norm.dados);
   if (!parse.success) {
     for (const issue of parse.error.issues) erros.push(`Campo "${issue.path.join(".")}": ${issue.message}`);
-    return { ok: false, erros, alertas };
+    return { ok: false, erros, alertas, ajustes_automaticos: ajustes };
   }
   const d = parse.data;
   const c = d.contratante;
@@ -73,6 +88,15 @@ export function validarContrato(entrada: DadosContratoEntrada, opts: { receita?:
           alertas.push(`${s.nome} não aparece no quadro de sócios da Receita — exigir procuração ou documento que comprove poderes para assinar.`);
     }
   } else alertas.push("CNPJ não foi conferido na Receita (consulta não feita ou indisponível).");
+
+  // Equipamento: tipo, potência e marca saem do catálogo (config/equipamentos.ts)
+  const eqv = conferirEquipamento(d);
+  erros.push(...eqv.erros);
+  alertas.push(...eqv.alertas);
+
+  // Frete e instalação embutidos no preço: exceção, só com o vendedor pagando os dois
+  if (d.frete_instalacao_embutidos && (d.responsavel_frete !== "VENDEDOR" || d.responsavel_instalacao !== "VENDEDOR"))
+    erros.push("Frete e instalação embutidos no preço da máquina: o responsável pelo frete e pela instalação precisa ser o VENDEDOR.");
 
   // Valores: IV.3 + IV.4 (+ acréscimo do cartão) = IV.5
   const acessorios = d.acessorios.reduce((s, a) => s + a.valor_centavos, 0);
@@ -126,5 +150,13 @@ export function validarContrato(entrada: DadosContratoEntrada, opts: { receita?:
   alertas.push(...pg.alertas);
   if (pg.condicao) alertas.push(...pg.condicao.pontos_atencao.map((p) => `Atenção (${pg.condicao!.nome}): ${p}`));
 
-  return { ok: erros.length === 0, erros, alertas, dados: d, pagamento: pg, preco_base_centavos: base };
+  // Nível final = o maior entre o das regras de pagamento e o das exceções (frete embutido = no mínimo 2).
+  let nivel: Nivel = pg.nivel;
+  const motivos_nivel = [...pg.motivos_nivel];
+  if (d.frete_instalacao_embutidos) {
+    motivos_nivel.push(MOTIVO_FRETE_EMBUTIDO);
+    if (nivel < 2) nivel = 2;
+  }
+
+  return { ok: erros.length === 0, erros, alertas, dados: d, pagamento: pg, preco_base_centavos: base, ajustes_automaticos: ajustes, nivel, motivos_nivel };
 }

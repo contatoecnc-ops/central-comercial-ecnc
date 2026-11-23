@@ -48,8 +48,14 @@ export const PagamentoSchema = z.object({
    */
   entrada_pagamentos: z.array(z.object({
     valor_centavos: centavos,
-    /** AAAA-MM-DD — data do pagamento (igual à do contrato = "na assinatura"). */
-    data: z.string(),
+    /**
+     * Quando paga: "assinatura" (data do contrato), "data" (precisa de `data`) ou "fim_fabricacao"
+     * (restante da entrada na finalização da fabricação, antes da saída da máquina — no máximo 1 e tem que ser o último).
+     */
+    momento: z.enum(["assinatura", "data", "fim_fabricacao"]).default("data")
+      .describe('"assinatura", "data" (padrão; exige data) ou "fim_fabricacao" (restante da entrada na finalização da fabricação; no máximo um, e o último)'),
+    /** AAAA-MM-DD — só obrigatória quando momento = "data". */
+    data: z.string().optional().describe('AAAA-MM-DD. Obrigatória só quando momento = "data"'),
     meio: z.enum(["pix", "transferencia", "boleto"]).default("pix"),
   })).optional(),
   parcelas: z.number().int().positive().optional(),
@@ -90,14 +96,21 @@ export const DadosContratoSchema = z.object({
   testemunha_cliente: TestemunhaSchema,
   /** Máquina principal — "Preço de aquisição" (IV.3). */
   equipamento: z.object({
-    /** Define qual modelo de contrato é usado (config/modelos.ts). */
-    /** fiber = Fiber de gravação/marcação; fiber_corte = Fiber de corte (ainda sem modelo). */
-    tipo: z.enum(["co2", "fiber", "fiber_corte", "uv", "solda"]),
-    modelo: z.string().min(1),
-    /** Ex.: 30W, 150W, 3kW */
-    potencia: z.string().min(1),
-    /** Marca da fonte/tubo laser. Ex.: RAYCUS, MAX, RECI */
-    marca_laser: z.string().min(1),
+    /**
+     * Define qual modelo de contrato é usado (config/modelos.ts). Sai do MODELO pelo catálogo
+     * (config/equipamentos.ts): se divergir da família, a validação dá erro.
+     * fiber = Fiber de gravação/marcação; fiber_corte = Fiber de corte, router, uv e solda: ainda sem modelo.
+     */
+    tipo: z.enum(["co2", "fiber", "fiber_corte", "router", "uv", "solda"])
+      .describe("Tipo da máquina, derivado do modelo pelo catálogo (L-xxxx = co2; Fiber/Marking = fiber; F-1530 = fiber_corte; Router = router). Se não bater com a família do modelo, é erro."),
+    modelo: z.string().min(1)
+      .describe("Modelo da máquina como no catálogo: L-6040, L-560, L-1060, L-1210, L-1610, F-1530, Fiber/Marking, Router, UV ou Solda. Sem repetir a potência."),
+    /** Ex.: 30W, 150W, 3kW. Router não tem; a validação exige para máquinas com laser. */
+    potencia: z.string().min(1).optional()
+      .describe("Potência (ex.: 90W, 100W, 30W, 3kW). Só para máquinas com laser (CO₂ e Fiber); Router não tem."),
+    /** Marca da fonte/tubo laser. Ex.: RAYCUS, MAX, RECI. Router não tem. */
+    marca_laser: z.string().min(1).optional()
+      .describe("Marca do laser (CO₂: RECI, PURI ou SPT). Pode ficar vazia no L-6040 (SPT) e no Fiber (RAYCUS Q/QB). Router não tem."),
     quantidade: z.number().int().positive().default(1),
     descricao: z.string().optional(),
     preco_centavos: centavos,
@@ -112,6 +125,13 @@ export const DadosContratoSchema = z.object({
   /** Quem paga o técnico/instalação. */
   responsavel_instalacao: z.enum(["COMPRADOR", "VENDEDOR"]),
   endereco_entrega: EnderecoSchema.optional(),
+  /**
+   * Exceção para alguns clientes: frete e instalação já estão dentro do preço da máquina.
+   * Só marcar true depois de confirmar com o vendedor. Exige frete e instalação = VENDEDOR e
+   * sobe o contrato para, no mínimo, Atenção.
+   */
+  frete_instalacao_embutidos: z.boolean().default(false)
+    .describe("true só se o vendedor confirmou que frete e instalação estão dentro do preço da máquina (exceção; exige frete e instalação = VENDEDOR; contrato vira Atenção)"),
 });
 
 export type DadosContrato = z.infer<typeof DadosContratoSchema>;

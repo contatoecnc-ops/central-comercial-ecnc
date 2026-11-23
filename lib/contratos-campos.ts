@@ -32,7 +32,8 @@ type No = any;
 
 const VALORES: Record<string, string> = {
   PF: "PF", PJ: "PJ",
-  co2: "CO₂", fiber: "Fiber", fiber_corte: "Fiber de corte", uv: "UV", solda: "Solda laser",
+  co2: "CO₂", fiber: "Fiber", fiber_corte: "Fiber de corte", router: "Router", uv: "UV", solda: "Solda laser",
+  assinatura: "Na assinatura", data: "Em data combinada", fim_fabricacao: "Na finalização da fabricação (antes da saída da máquina)",
   pix: "PIX", transferencia: "Transferência", boleto: "Boleto",
   pronta_entrega: "Pronta entrega", dias_uteis: "Dias úteis", dias_corridos: "Dias corridos",
   COMPRADOR: "Comprador", VENDEDOR: "Vendedor (ECNC)",
@@ -101,10 +102,10 @@ const GRUPOS: GrupoDef[] = [
   {
     id: "equipamento", titulo: "Equipamento", base: ["equipamento"],
     itens: [
-      { c: ["tipo"], rotulo: "Tipo" },
-      { c: ["modelo"], rotulo: "Modelo", exemplo: "ECNC Fiber 100W" },
-      { c: ["potencia"], rotulo: "Potência", exemplo: "30W, 150W, 3kW" },
-      { c: ["marca_laser"], rotulo: "Marca do laser", exemplo: "RAYCUS" },
+      { c: ["modelo"], rotulo: "Modelo", exemplo: "L-1610, L-6040, F-1530, Fiber Marking, Router", dica: "O tipo de máquina sai do modelo" },
+      { c: ["tipo"], rotulo: "Tipo", dica: "Sai do modelo — o agente confere" },
+      { c: ["potencia"], rotulo: "Potência", exemplo: "90W, 100W, 30W, 3kW", dica: "Só máquinas com laser (CO₂ e Fiber); Router não tem" },
+      { c: ["marca_laser"], rotulo: "Marca do laser", exemplo: "RECI, PURI ou SPT", dica: "CO₂: o L-6040 usa SPT se não informar; Fiber usa RAYCUS Q/QB se não informar; Router não tem" },
       { c: ["quantidade"], rotulo: "Quantidade", dica: "1 se não informar" },
       { c: ["preco_centavos"], rotulo: "Preço do equipamento", exemplo: "R$ 118.000,00" },
       { c: ["descricao"], rotulo: "Descrição" },
@@ -127,7 +128,8 @@ const GRUPOS: GrupoDef[] = [
     itens: [
       { c: ["condicao"], rotulo: "Condição de pagamento", opcoes: CONDICOES.map((c) => c.nome) },
       { c: ["entrada_centavos"], rotulo: "Valor da entrada", exemplo: "R$ 20.000,00" },
-      { c: ["entrada_pagamentos", "data"], rotulo: "Data da entrada", dica: "Em mais de um pagamento: valor e data de cada um" },
+      { c: ["entrada_pagamentos", "momento"], rotulo: "Quando paga cada parte da entrada", dica: "Sem informar, a entrada é um PIX na assinatura. O restante pode ficar para a finalização da fabricação" },
+      { c: ["entrada_pagamentos", "data"], rotulo: "Data da entrada", dica: "Só quando for em data combinada: valor e data de cada pagamento" },
       { c: ["entrada_pagamentos", "meio"], rotulo: "Meio de pagamento da entrada" },
       { c: ["parcelas"], rotulo: "Número de parcelas", exemplo: "12" },
       { c: ["dias_primeira_parcela"], rotulo: "Prazo do 1º vencimento (dias)", dica: "Ou use a data fixa abaixo", exemplo: "30" },
@@ -146,6 +148,7 @@ const GRUPOS: GrupoDef[] = [
       { c: ["endereco_entrega", "complemento"], rotulo: "Complemento do endereço de entrega" },
       { c: ["responsavel_frete"], rotulo: "Quem paga o frete" },
       { c: ["responsavel_instalacao"], rotulo: "Quem paga o técnico/instalação" },
+      { c: ["frete_instalacao_embutidos"], rotulo: "Frete e instalação já dentro do preço da máquina", dica: "Exceção — o agente confirma antes; o contrato vira Atenção" },
     ],
   },
 ];
