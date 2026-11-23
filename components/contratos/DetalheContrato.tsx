@@ -3,6 +3,7 @@ import { AlertTriangle, Info } from "lucide-react";
 import { BlocoAnalise } from "@/components/analises/BlocoAnalise";
 import { SeloAnaliseBadge } from "@/components/analises/Selo";
 import { AcoesContrato } from "@/components/contratos/AcoesContrato";
+import { ListaAssinaturas } from "@/components/contratos/BlocoAssinaturas";
 import { NivelBadge, SeloSandbox, StatusContratoBadge } from "@/components/contratos/Bits";
 import { DocumentosChecklist } from "@/components/contratos/DocumentosChecklist";
 import { nomeCondicao } from "@/components/contratos/KanbanContratos";
@@ -35,14 +36,6 @@ const ROTULO_EVENTO: Record<string, string> = {
   assinado: "Assinado por todos",
   recusado_zapsign: "Assinatura RECUSADA",
   cancelado: "Cancelado",
-};
-
-const ROTULO_PAPEL: Record<string, string> = {
-  cliente: "Cliente (comprador)",
-  garantidor: "Garantidor solidário",
-  testemunha_cliente: "Testemunha do cliente",
-  testemunha: "Testemunha ECNC (vendedor)",
-  contratada: "Gestor ECNC (contratada)",
 };
 
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
@@ -269,30 +262,15 @@ export function VisaoContrato({
       {c.zapsign_assinantes && c.zapsign_assinantes.length > 0 && (
         <div className="mt-6">
           <Bloco titulo="Assinaturas (ZapSign)">
-            <ol className="space-y-3">
-              {c.zapsign_assinantes.map((a, i) => {
-                // O vendedor não recebe o link do gestor: assinar como gestor é só do gestor.
-                const mostrarLink = a.url && !a.assinou_em && !(papel === "vendedor" && a.papel === "contratada");
-                return (
-                  <li key={a.token ?? i} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold">{i + 1}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="font-semibold">{a.nome}</span> <span className="text-muted">· {ROTULO_PAPEL[a.papel] ?? a.papel}</span>
-                    </span>
-                    {a.assinou_em ? (
-                      <span className="text-emerald-400">Assinou em {fmtDateTime(a.assinou_em)}</span>
-                    ) : (
-                      <span className="text-yellow-300">Aguardando</span>
-                    )}
-                    {mostrarLink && (
-                      <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-muted underline hover:text-brand">
-                        Link de assinatura
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+            <ListaAssinaturas
+              assinantes={c.zapsign_assinantes}
+              status={c.status}
+              visao={papel}
+              dados={d}
+              celularVendedor={v.TESTEMUNHA_ECNC_CELULAR}
+              numeroContrato={c.numero}
+              vendedorNome={c.vendedor_nome}
+            />
           </Bloco>
         </div>
       )}

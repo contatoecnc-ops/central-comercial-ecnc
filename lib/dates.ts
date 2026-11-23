@@ -11,6 +11,10 @@ export function fmtDate(iso: string | Date) {
   return formatInTimeZone(iso, TZ, "dd/MM/yyyy", { locale: ptBR });
 }
 
+export function fmtDayMonth(iso: string | Date) {
+  return formatInTimeZone(iso, TZ, "dd/MM", { locale: ptBR });
+}
+
 /** ISO → valor para <input type="datetime-local"> no fuso de São Paulo */
 export function toInputValue(iso: string | Date) {
   return formatInTimeZone(iso, TZ, "yyyy-MM-dd'T'HH:mm");
