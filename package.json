@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test:sales": "tsx scripts/test-workbook.ts",
     "test:analise": "node --import tsx --test lib/analise-credito/regras.test.ts",
+    "test:whatsapp": "node --import tsx --test lib/contratos/assinatura-whatsapp.test.ts",
     "chat:contratos": "tsx scripts/chat-contratos.ts",
     "test:contratos":"cd lib/agente-contratos && node --import tsx --test tests/*.test.ts"
   },
